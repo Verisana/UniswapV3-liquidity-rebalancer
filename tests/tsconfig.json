@@ -1,8 +1,0 @@
-{
-    "extends": "../tsconfig.json",
-    "compilerOptions": {
-        "experimentalDecorators": true,
-        "isolatedModules": false
-    },
-    "exclude": ["../node_modules"]
-}
