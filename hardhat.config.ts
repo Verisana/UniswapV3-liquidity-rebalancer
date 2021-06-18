@@ -1,6 +1,7 @@
-import "@typechain/hardhat"
-import "@nomiclabs/hardhat-waffle"
-import "@nomiclabs/hardhat-ethers"
+import "@typechain/hardhat";
+import "@nomiclabs/hardhat-waffle";
+import "@nomiclabs/hardhat-ethers";
+import "solidity-coverage";
 
 export default {
     defaultNetwork: "hardhat",
@@ -23,4 +24,4 @@ export default {
         cache: "./dist/contracts/cache",
         artifacts: "./dist/contracts/artifacts"
     }
-}
+};
