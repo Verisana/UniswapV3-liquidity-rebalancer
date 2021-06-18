@@ -1,0 +1,45 @@
+{
+  "name": "uniswapv3-liquidity-rebalancer",
+  "version": "1.0.0",
+  "description": "As you may know, UniswapV3 gives the ability to allocate funds more effectively through a mechanism of concentrated liquidity. This project aims to give users an automated tool, effectively reallocating their funds to generate the most profits.",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Verisana/UniswapV3-liquidity-rebalancer.git"
+  },
+  "author": "Azamat Khatsukov",
+  "dependencies": {
+    "decimal.js": "^10.2.1",
+    "dotenv": "^10.0.0",
+    "ethers": "^5.3.1",
+    "jshint": "^2.13.0",
+    "winston": "^3.3.3"
+  },
+  "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "^1.0.1",
+    "@types/chai": "^4.2.18",
+    "@types/mocha": "^8.2.2",
+    "chai": "^4.3.4",
+    "eslint": "^7.28.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^3.4.0",
+    "hardhat": "^2.4.0",
+    "mocha": "^9.0.0",
+    "nyc": "^15.1.0",
+    "prettier": "^2.3.1",
+    "source-map-support": "^0.5.19",
+    "typechain": "^5.0.0"
+  },
+  "mocha": {
+    "reporter": "list",
+    "colors": true
+  },
+  "prettier": {
+    "trailingComma": "none",
+    "tabWidth": 4,
+    "semi": false,
+    "singleQuote": false
+  }
+}

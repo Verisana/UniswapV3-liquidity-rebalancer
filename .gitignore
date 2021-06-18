@@ -1,0 +1,9 @@
+.env
+sensitive/
+dist/
+.vscode/
+coverage/
+dist/
+logs/
+node_modules/
+.nyc_output/
