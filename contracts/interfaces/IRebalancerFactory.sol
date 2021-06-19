@@ -1,20 +1,33 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.4;
 
-import "@uniswap/v3-core/contracts/interfaces/UniswapV3Pool.sol";
-
-// This is the main building block for smart contracts.
 interface IRebalancerFactory {
+    struct RebalancerFee {
+        uint256 numerator;
+        uint256 denominator;
+    }
 
-
-    event ownerChange(address indexed oldOwner, address indexed newOwner);
-    event rebalancerCreated(
+    event RebalancerCreated(
         address indexed token0,
         address indexed token1,
         uint24 indexed fee,
         int24 tickSpacing,
-        address pool
+        address pool,
+        address rebalancer
     );
-    function owner() external view returns (address);
-    function getRebalancer(UniswapV3Pool pool);
+    event RebalancerFeeChanged(RebalancerFee oldFee, RebalancerFee newFee);
+
+    function setRebalanceFee(RebalancerFee calldata _rebalancerFee) external;
+
+    function createRebalancer(address pool)
+        external
+        view
+        returns (address rebalancer);
+
+    function getRebalancer(address pool)
+        external
+        view
+        returns (address rebalancer);
+
+    function returnFunds(address[] calldata rebalancers) external;
 }
