@@ -15,6 +15,7 @@
     },
     "author": "Azamat Khatsukov",
     "dependencies": {
+        "@openzeppelin/contracts": "^4.1.0",
         "@uniswap/v3-core": "^1.0.0",
         "decimal.js": "^10.2.1",
         "dotenv": "^10.0.0",
