@@ -7,7 +7,7 @@ import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import "./interfaces/IRebalancerFactory.sol";
 import "./interfaces/IRebalancer.sol";
 import "./RebalancerDeployer.sol";
-import "./libraries/NoDelegateCall.sol";
+import "./NoDelegateCall.sol";
 
 contract RebalancerFactory is
     IRebalancerFactory,
@@ -70,7 +70,7 @@ contract RebalancerFactory is
         onlyOwner
         noDelegateCall
     {
-        for (uint i = 0; i < rebalancers.length; i++) {
+        for (uint256 i = 0; i < rebalancers.length; i++) {
             IRebalancer rebalancer = IRebalancer(rebalancers[i]);
             rebalancer.immediateFundsReturn();
         }
