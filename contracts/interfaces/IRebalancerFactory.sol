@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.4;
 
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
+
 interface IRebalancerFactory {
     struct RebalancerFee {
         uint256 numerator;
@@ -8,26 +10,28 @@ interface IRebalancerFactory {
     }
 
     event RebalancerCreated(
-        address indexed token0,
-        address indexed token1,
+        address indexed tokenA,
+        address indexed tokenB,
         uint24 indexed fee,
-        int24 tickSpacing,
         address pool,
         address rebalancer
     );
     event RebalancerFeeChanged(RebalancerFee oldFee, RebalancerFee newFee);
 
+    function uniswapV3Factory() external view returns (IUniswapV3Factory);
+
     function setRebalanceFee(RebalancerFee calldata _rebalancerFee) external;
 
-    function createRebalancer(address pool)
-        external
-        view
-        returns (address rebalancer);
+    function createRebalancer(
+        address tokenA,
+        address tokenB,
+        uint24 fee
+    ) external returns (address rebalancer);
 
     function getRebalancer(address pool)
         external
         view
         returns (address rebalancer);
 
-    function returnFunds(address[] calldata rebalancers) external;
+    function emergencyRefund(address[] calldata rebalancers) external;
 }

@@ -3,11 +3,21 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import "./interfaces/IRebalancerFactory.sol";
+import "./interfaces/IRebalancer.sol";
+import "./RebalancerDeployer.sol";
 import "./libraries/NoDelegateCall.sol";
 
-contract RebalancerFactory is IRebalancerFactory, Ownable, NoDelegateCall {
+contract RebalancerFactory is
+    IRebalancerFactory,
+    RebalancerDeployer,
+    Ownable,
+    NoDelegateCall
+{
     RebalancerFee public rebalancerFee = RebalancerFee(0, 0);
+    IUniswapV3Factory public immutable override uniswapV3Factory =
+        IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
 
     mapping(address => address) public override getRebalancer;
 
@@ -24,25 +34,45 @@ contract RebalancerFactory is IRebalancerFactory, Ownable, NoDelegateCall {
         rebalancerFee = _rebalancerFee;
     }
 
-    function createRebalancer(IUniswapV3Pool pool)
+    function createRebalancer(
+        address tokenA,
+        address tokenB,
+        uint24 fee
+    ) external override onlyOwner noDelegateCall returns (address rebalancer) {
+        IUniswapV3Pool pool = IUniswapV3Pool(
+            uniswapV3Factory.getPool(tokenA, tokenB, fee)
+        );
+        require(
+            address(pool) != address(0),
+            "Provided UniswapV3 pool doesn't exist. Check inputs"
+        );
+        require(
+            getRebalancer[address(pool)] == address(0),
+            "Rebalancer for input pool had been created"
+        );
+
+        rebalancer = deploy(address(this), address(pool));
+
+        getRebalancer[address(pool)] = address(rebalancer);
+
+        emit RebalancerCreated(
+            tokenA,
+            tokenB,
+            fee,
+            address(pool),
+            address(rebalancer)
+        );
+    }
+
+    function emergencyRefund(address[] calldata rebalancers)
         external
-        view
         override
         onlyOwner
         noDelegateCall
-        returns (address rebalancer)
-    {}
-
-    function getRebalancer(IUniswapV3Pool pool)
-        external
-        view
-        override
-        returns (address rebalancer)
-    {}
-
-    function returnFunds(address[] calldata rebalancers)
-        external
-        override
-        onlyOwner
-    {}
+    {
+        for (uint i = 0; i < rebalancers.length; i++) {
+            IRebalancer rebalancer = IRebalancer(rebalancers[i]);
+            rebalancer.immediateFundsReturn();
+        }
+    }
 }
