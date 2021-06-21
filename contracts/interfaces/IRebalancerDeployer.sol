@@ -6,6 +6,6 @@ import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 interface IRebalancerDeployer {
     function parameters() external view returns (
         address factory,
-        IUniswapV3Pool pool
+        address pool
     );
 }

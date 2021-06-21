@@ -8,12 +8,12 @@ import "./Rebalancer.sol";
 contract RebalancerDeployer is IRebalancerDeployer {
     struct Parameters {
         address factory;
-        IUniswapV3Pool pool;
+        address pool;
     }
 
     Parameters public override parameters;
 
-    function deploy(address factory, IUniswapV3Pool pool)
+    function deploy(address factory, address pool)
         internal
         returns (address rebalancer)
     {
