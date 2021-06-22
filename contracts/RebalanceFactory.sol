@@ -21,6 +21,27 @@ contract RebalancerFactory is
 
     mapping(address => address) public override getRebalancer;
 
+    // Once in every 24 hours
+    uint256 public override summarizationFrequency = 5760;
+
+    function setBlockFrequencySummarization(uint256 _summarizationFrequency)
+        external
+        override
+        onlyOwner
+    {
+        emit BlockFrequencySummarizationChanged(
+            summarizationFrequency,
+            _summarizationFrequency
+        );
+
+        // Even owner can not set more than ~48 hours. This measure prevents misbehavior from owner
+        require(
+            _summarizationFrequency < 11601,
+            "Unreasonably big summarizationFrequency. Set it less than 11601"
+        );
+        summarizationFrequency = _summarizationFrequency;
+    }
+
     function setRebalanceFee(RebalancerFee calldata _rebalancerFee)
         external
         override

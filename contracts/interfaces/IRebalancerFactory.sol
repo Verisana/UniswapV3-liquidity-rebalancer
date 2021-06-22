@@ -17,21 +17,30 @@ interface IRebalancerFactory {
         address rebalancer
     );
     event RebalancerFeeChanged(RebalancerFee oldFee, RebalancerFee newFee);
+    event BlockFrequencySummarizationChanged(
+        uint256 oldSummarizationFrequency,
+        uint256 newSummarizationFrequency
+    );
+
+    function summarizationFrequency() external view returns (uint256);
 
     function uniswapV3Factory() external view returns (IUniswapV3Factory);
 
+    function getRebalancer(address pool)
+        external
+        view
+        returns (address rebalancer);
+
     function setRebalanceFee(RebalancerFee calldata _rebalancerFee) external;
+
+    function setBlockFrequencySummarization(uint256 _summarizationFrequency)
+        external;
 
     function createRebalancer(
         address tokenA,
         address tokenB,
         uint24 fee
     ) external returns (address rebalancer);
-
-    function getRebalancer(address pool)
-        external
-        view
-        returns (address rebalancer);
 
     function emergencyRefund(address[] calldata rebalancers) external;
 }
