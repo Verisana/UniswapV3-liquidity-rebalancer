@@ -85,6 +85,16 @@ contract Rebalancer is Ownable, NoDelegateCall {
     function _openNewPosition(int24 tickLowerCount, int24 tickUpperCount)
         private
     {
+        (uint160 sqrtPriceX96, int24 tick,,,,,) = pool.slot0();
+        int24 fulTick = tick + (tick % pool.tickSpacing());
+
+        // Here we got lower and upper bounds for current price
+        int24 tickLower = fulTick - pool.tickSpacing();
+        int24 tickUpper = fulTick + pool.tickSpacing();
+
+        tickLower -= tickLowerCount * pool.tickSpacing();
+        tickUpper += tickUpperCount * pool.tickSpacing();
+
         // (
         //     uint256 tokenId,
         //     uint128 liquidity,
@@ -94,8 +104,8 @@ contract Rebalancer is Ownable, NoDelegateCall {
         //     token0: pool.token0(),
         //     token1: pool.token1(),
         //     fee: pool.fee(),
-        //     tickLower: 0,
-        //     tickUpper: 0,
+        //     tickLower: tickLower,
+        //     tickUpper: tickUpper,
         //     amount0Desired: 0,
         //     amount1Desired: 0,
         //     amount0Min: 0,
