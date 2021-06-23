@@ -42,7 +42,7 @@
         "eslint-config-prettier": "^8.3.0",
         "eslint-plugin-prettier": "^3.4.0",
         "ethereum-waffle": "^3.4.0",
-        "hardhat": "^2.4.0",
+        "hardhat": "^2.4.1",
         "mocha": "^9.0.0",
         "nyc": "^15.1.0",
         "prettier": "^2.3.1",
@@ -55,6 +55,7 @@
         "typescript": "^4.3.4"
     },
     "mocha": {
+        "register": "@ts-node/register",
         "reporter": "list",
         "colors": true
     },
