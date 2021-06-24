@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/finance/PaymentSplitter.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+
 import "./interfaces/IRebalancerDeployer.sol";
 import "./interfaces/IRebalancer.sol";
 import "./NoDelegateCall.sol";
@@ -19,6 +21,7 @@ contract Rebalancer is Ownable, NoDelegateCall {
     uint256 public immutable shareDenominator = 1000000;
     INonfungiblePositionManager public immutable positionManager =
         INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
+    ISwapRouter public immutable swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     uint256 public totalGasUsed = 0;
     uint256 public lastBlockSummirized = 0;
