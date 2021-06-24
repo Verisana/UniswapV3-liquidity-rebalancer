@@ -4,10 +4,12 @@ pragma solidity ^0.8.4;
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
 interface IRebalancerFactory {
-    struct RebalancerFee {
-        uint256 numerator;
-        uint256 denominator;
-    }
+    event OwnerChanged(address indexed oldOwner, address indexed newOwner);
+
+    function owner() external view returns (address);
+    function shareDenominator() external view returns(uint);
+
+    function setOwner(address _owner) external;
 
     event RebalancerCreated(
         address indexed tokenA,
@@ -16,13 +18,18 @@ interface IRebalancerFactory {
         address pool,
         address rebalancer
     );
-    event RebalancerFeeChanged(RebalancerFee oldFee, RebalancerFee newFee);
+    event RebalancerFeeChanged(uint256 oldFee, uint256 newFee);
     event BlockFrequencySummarizationChanged(
         uint256 oldSummarizationFrequency,
         uint256 newSummarizationFrequency
     );
 
     function summarizationFrequency() external view returns (uint256);
+
+    function rebalancerFee()
+        external
+        view
+        returns (uint256 numerator, uint256 denominator);
 
     function uniswapV3Factory() external view returns (IUniswapV3Factory);
 

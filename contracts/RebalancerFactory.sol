@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import "./interfaces/IRebalancerFactory.sol";
@@ -12,17 +11,36 @@ import "./NoDelegateCall.sol";
 contract RebalancerFactory is
     IRebalancerFactory,
     RebalancerDeployer,
-    Ownable,
     NoDelegateCall
 {
-    RebalancerFee public rebalancerFee = RebalancerFee(0, 0);
     IUniswapV3Factory public immutable override uniswapV3Factory =
         IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
+    uint256 public immutable override shareDenominator = 1000000;
 
+    RebalancerFee public override rebalancerFee = RebalancerFee(0, 0);
     mapping(address => address) public override getRebalancer;
+
 
     // Once in every 24 hours
     uint256 public override summarizationFrequency = 5760;
+
+    address public override owner;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner);
+        _;
+    }
+
+    function setOwner(address _owner) external override {
+        require(msg.sender == owner);
+        emit OwnerChanged(owner, _owner);
+        owner = _owner;
+    }
+
+    constructor() {
+        owner = msg.sender;
+        emit OwnerChanged(address(0), msg.sender);
+    }
 
     function setBlockFrequencySummarization(uint256 _summarizationFrequency)
         external
