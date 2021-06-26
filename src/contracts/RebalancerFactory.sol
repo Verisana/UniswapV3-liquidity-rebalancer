@@ -15,11 +15,9 @@ contract RebalancerFactory is
 {
     IUniswapV3Factory public immutable override uniswapV3Factory =
         IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
-    uint256 public immutable override shareDenominator = 1000000;
 
     RebalancerFee public override rebalancerFee = RebalancerFee(0, 0);
     mapping(address => address) public override getRebalancer;
-
 
     // Once in every 24 hours
     uint256 public override summarizationFrequency = 5760;
@@ -31,8 +29,7 @@ contract RebalancerFactory is
         _;
     }
 
-    function setOwner(address _owner) external override {
-        require(msg.sender == owner);
+    function setOwner(address _owner) external override onlyOwner {
         emit OwnerChanged(owner, _owner);
         owner = _owner;
     }
@@ -52,7 +49,7 @@ contract RebalancerFactory is
             _summarizationFrequency
         );
 
-        // Even owner can not set more than ~48 hours. This measure prevents misbehavior from owner
+        // Even owner can not set more than ~48 hours. This measure prevents misbehavior from owners side
         require(
             _summarizationFrequency < 11601,
             "Unreasonably big summarizationFrequency. Set it less than 11601"
@@ -60,17 +57,15 @@ contract RebalancerFactory is
         summarizationFrequency = _summarizationFrequency;
     }
 
-    function setRebalanceFee(RebalancerFee calldata _rebalancerFee)
+    function setRebalanceFee(uint256 numerator, uint256 denominator)
         external
         override
         onlyOwner
     {
-        emit RebalancerFeeChanged(rebalancerFee, _rebalancerFee);
-        require(
-            _rebalancerFee.numerator < _rebalancerFee.denominator,
-            "New RebalancerFee's denomiator > numerator. Check inputs"
-        );
-        rebalancerFee = _rebalancerFee;
+        require(numerator < denominator, "Numerator can not be >= denominator");
+        emit RebalancerFeeChanged(rebalancerFee, numerator, denominator);
+        rebalancerFee.numerator = numerator;
+        rebalancerFee.denominator = denominator;
     }
 
     function createRebalancer(
