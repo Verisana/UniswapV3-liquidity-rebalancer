@@ -29,7 +29,7 @@ export default {
         ]
     },
     paths: {
-        sources: "./contracts",
+        sources: "./src/contracts",
         tests: "./test",
         cache: "./dist/contracts/cache",
         artifacts: "./dist/contracts/artifacts"

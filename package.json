@@ -1,7 +1,7 @@
 {
     "name": "uniswapv3-liquidity-rebalancer",
     "version": "1.0.0",
-    "description": "As you may know, UniswapV3 gives the ability to allocate funds more effectively through a mechanism of concentrated liquidity. This project aims to give users an automated tool, effectively reallocating their funds to generate the most profits.",
+    "description": "This project aims to give users an automated tool, effectively reallocating their funds to generate the most profits.",
     "scripts": {
         "compile": "npx hardhat compile",
         "tsc": "npx tsc -w",
