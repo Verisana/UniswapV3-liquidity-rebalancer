@@ -373,17 +373,19 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
     }
 
     function _collectFees() private {
-        (uint256 feeAmount0, uint256 feeAmount1) = positionManager.collect(
-            INonfungiblePositionManager.CollectParams({
-                tokenId: openPosition.tokenId,
-                recipient: address(this),
-                amount0Max: 0,
-                amount1Max: 0
-            })
-        );
+        if (openPosition.tokenId != 0) {
+            (uint256 feeAmount0, uint256 feeAmount1) = positionManager.collect(
+                INonfungiblePositionManager.CollectParams({
+                    tokenId: openPosition.tokenId,
+                    recipient: address(this),
+                    amount0Max: 0,
+                    amount1Max: 0
+                })
+            );
 
-        feesIncome.amount0 += feeAmount0;
-        feesIncome.amount1 += feeAmount1;
+            feesIncome.amount0 += feeAmount0;
+            feesIncome.amount1 += feeAmount1;
+        }
     }
 
     function _distributeServiceFees() private {
