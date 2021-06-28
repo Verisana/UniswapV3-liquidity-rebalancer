@@ -257,13 +257,24 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
     }
 
     // Internal helper methods
-    function _sendRoundingErrorsToService() private {
-        Totals memory balance = Totals({
-            amount0: token0.balanceOf(address(this)),
-            amount1: token1.balanceOf(address(this))
-        });
+    function _sendDiffToService(
+        Totals memory calcBalance,
+        Totals memory realBalance
+    ) private {
+        require(
+            realBalance.amount0 >= calcBalance.amount0 &&
+                realBalance.amount1 >= calcBalance.amount1,
+            "There are bugs in Rebalancer. You should never owe more tokens, than you have"
+        );
 
-
+        token0.safeTransfer(
+            factory.owner(),
+            realBalance.amount0 - calcBalance.amount0
+        );
+        token1.safeTransfer(
+            factory.owner(),
+            realBalance.amount1 - calcBalance.amount1
+        );
     }
 
     function _swapTokens(
