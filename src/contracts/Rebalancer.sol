@@ -390,22 +390,16 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
 
     function _distributeServiceFees() private {
         (uint256 numerator, uint256 denominator) = factory.rebalancerFee();
+        uint256 serviceFee;
 
-        uint256 serviceFee = calcShare(
-            feesIncome.amount0,
-            numerator,
-            denominator
-        );
-
+        serviceFee = calcShare(feesIncome.amount0, numerator, denominator);
         if (serviceFee != 0) {
-            token0.safeApprove(factory.owner(), serviceFee);
             token0.safeTransfer(factory.owner(), serviceFee);
             feesIncome.amount0 -= serviceFee;
         }
 
         serviceFee = calcShare(feesIncome.amount1, numerator, denominator);
         if (serviceFee != 0) {
-            token1.safeApprove(factory.owner(), serviceFee);
             token1.safeTransfer(factory.owner(), serviceFee);
             feesIncome.amount1 -= serviceFee;
         }
