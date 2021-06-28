@@ -182,16 +182,37 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         }
     }
 
-    // Here we also add functionality of sending rounding errors to
-    // the service owner. We expect this to be very small amounts.
-    // If not, there are bugs in contract
+    // Here we also add functionality of sending unaccounted tokens to
+    // the service owners. This helps to receive stuck funds, if ever appear.
+    // I know, this is not good to have sideffects, but array iterating is very expensive
+    // on Ethereum, so I decided to unite both operations here
     function deleteUsersWithoutFunds() external restrictIfSummStarted {
         // We don't know beforehand array size, so we calculate it
         uint256 counter = 0;
 
-        
+        require(
+            openPosition.tokenId != 0,
+            "This method must be used only if a position has been opened"
+        );
+
+        Totals memory realBalance = Totals({
+            amount0: token0.balanceOf(address(this)),
+            amount1: token1.balanceOf(address(this))
+        });
+
+        Totals memory calcBalance = Totals(
+            inStake.amount0 + feesIncome.amount0,
+            inStake.amount1 + feesIncome.amount1
+        );
 
         for (uint256 i = 0; i < users.length; i++) {
+            calcBalance.amount0 +=
+                userStates[users[i]].fee.amount0 +
+                userStates[users[i]].deposit.amount0;
+            calcBalance.amount1 +=
+                userStates[users[i]].fee.amount1 +
+                userStates[users[i]].deposit.amount1;
+
             if (isUserWithoutFunds(userStates[users[i]])) {
                 isInUsers[users[i]] = false;
             } else {
@@ -200,8 +221,16 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
             }
         }
 
+        require(
+            calcBalance.amount0 == realBalance.amount0 &&
+                calcBalance.amount1 == realBalance.amount1,
+            "Contract operates with flows. You haven't accounted some funds movements"
+        );
+
+        _sendDiffToService(calcBalance, realBalance);
+
         // Here we populate new array. It would be better to push() in array
-        // but that is not allowed oin Solidity
+        // but that is not allowed in Solidity
         address[] memory usersWithFunds = new address[](counter);
 
         counter = 0;
@@ -249,9 +278,6 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
                 summParams.stage = 0;
                 summParams.lastUser = 0;
                 summParams.lastBlock = block.number;
-
-                // Here we supposed to get some very small rounding error amounts
-                _sendRoundingErrorsToService();
             }
         }
     }
