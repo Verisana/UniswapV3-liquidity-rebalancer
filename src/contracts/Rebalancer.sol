@@ -483,8 +483,6 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
 
             UserState memory user = userStates[users[i]];
 
-            // If user requested withdrawal, there stake will be set to
-            // zero by default
             uint256 converted = summParams.sellToken0
                 ? user.deposit.amount0 * summParams.fixedPrice
                 : user.deposit.amount1 * summParams.fixedPrice;
