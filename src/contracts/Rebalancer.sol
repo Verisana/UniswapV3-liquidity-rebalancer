@@ -512,30 +512,24 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
     function _setConfigsForSecondStage() private {
         uint256 initAmount0 = inStake.amount0;
         uint256 initAmount1 = inStake.amount1;
-        bool sellToken0;
 
         // We swap all tokens into one asset and do it to the side of
         // smaller amount in order to counter-balance price movement
         if (inStake.amount0 > inStake.amount1) {
-            sellToken0 = true;
-            _swapTokens(sellToken0, inStake.amount0, 0);
+            summParams.sellToken0 = true;
+            _swapTokens(summParams.sellToken0, inStake.amount0, 0);
             summParams.fixedPrice =
                 (inStake.amount1 - initAmount1) /
                 initAmount0;
             summParams.shareDenominator = inStake.amount1;
         } else {
-            sellToken0 = false;
-            _swapTokens(sellToken0, inStake.amount1, 0);
+            summParams.sellToken0 = false;
+            _swapTokens(summParams.sellToken0, inStake.amount1, 0);
             summParams.fixedPrice =
                 (inStake.amount0 - initAmount0) /
                 initAmount1;
             summParams.shareDenominator = inStake.amount0;
         }
-
-        summParams.sellToken0 = sellToken0;
-        summParams.shareDenominator = sellToken0
-            ? inStake.amount1
-            : inStake.amount0;
     }
 
     // Helper view methods for everyone
