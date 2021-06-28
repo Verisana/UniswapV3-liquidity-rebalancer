@@ -171,7 +171,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
             );
         } else {
             _collectFees();
-            _removeLiquidityStake();
+            _removeLiquidityPosition();
             _openNewPosition(
                 tickLowerCount,
                 tickUpperCount,
@@ -224,7 +224,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         );
         summParams.stage++;
         _collectFees();
-        _removeLiquidityStake();
+        _removeLiquidityPosition();
         _distributeServiceFees();
     }
 
@@ -351,23 +351,25 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         });
     }
 
-    function _removeLiquidityStake() private {
-        (uint256 amount0, uint256 amount1) = positionManager.decreaseLiquidity(
-            INonfungiblePositionManager.DecreaseLiquidityParams({
-                tokenId: openPosition.tokenId,
-                liquidity: 0,
-                amount0Min: 0,
-                amount1Min: 0,
-                deadline: getDeadline()
-            })
-        );
+    function _removeLiquidityPosition() private {
+        if (openPosition.tokenId != 0) {
+            (uint256 amount0, uint256 amount1) = positionManager.decreaseLiquidity(
+                INonfungiblePositionManager.DecreaseLiquidityParams({
+                    tokenId: openPosition.tokenId,
+                    liquidity: 0,
+                    amount0Min: 0,
+                    amount1Min: 0,
+                    deadline: getDeadline()
+                })
+            );
 
-        inStake.amount0 += amount0;
-        inStake.amount1 += amount1;
+            inStake.amount0 += amount0;
+            inStake.amount1 += amount1;
 
-        positionManager.burn(openPosition.tokenId);
+            positionManager.burn(openPosition.tokenId);
 
-        openPosition = Position(0, 0, 0, 0, 0, 0);
+            openPosition = Position(0, 0, 0, 0, 0, 0);
+        }
     }
 
     function _collectFees() private {
