@@ -423,28 +423,41 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
             }
             UserState storage user = userStates[users[i]];
 
-            user.fee.amount0 += calcShare(
+            Totals memory userFee = Totals(0, 0);
+            Totals memory userDeposit = Totals(0, 0);
+
+            userFee.amount0 += calcShare(
                 feesIncome.amount0,
                 user.share,
                 summParams.shareDenominator
             );
-            user.fee.amount1 += calcShare(
+            userFee.amount1 += calcShare(
                 feesIncome.amount1,
                 user.share,
                 summParams.shareDenominator
             );
 
-            user.deposit.amount0 += calcShare(
+            userDeposit.amount0 += calcShare(
                 inStake.amount0,
                 user.share,
                 summParams.shareDenominator
             );
 
-            user.deposit.amount1 += calcShare(
+            userDeposit.amount1 += calcShare(
                 inStake.amount1,
                 user.share,
                 summParams.shareDenominator
             );
+
+            user.fee.amount0 += userFee.amount0;
+            user.fee.amount1 += userFee.amount1;
+            user.deposit.amount0 += userDeposit.amount0;
+            user.deposit.amount1 += userDeposit.amount1;
+
+            summParams.distributedFees.amount0 += userFee.amount0;
+            summParams.distributedFees.amount1 += userFee.amount1;
+            summParams.distributedDeposits.amount0 += userDeposit.amount0;
+            summParams.distributedDeposits.amount1 += userDeposit.amount1;
 
             user.share = 0;
 
@@ -458,6 +471,21 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
             }
         }
 
+        feesIncome.amount0 -= summParams.distributedFees.amount0;
+        feesIncome.amount1 -= summParams.distributedFees.amount1;
+        inStake.amount0 -= summParams.distributedDeposits.amount0;
+        inStake.amount1 -= summParams.distributedDeposits.amount1;
+
+        // Expect very small amounts, occuring because of rounding errors
+        token0.safeTransfer(
+            factory.owner(),
+            feesIncome.amount0 + inStake.amount0
+        );
+        token1.safeTransfer(
+            factory.owner(),
+            feesIncome.amount1 + inStake.amount1
+        );
+
         feesIncome.amount0 = 0;
         feesIncome.amount1 = 0;
 
@@ -466,6 +494,11 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
 
         summParams.toStake.amount0 = 0;
         summParams.toStake.amount1 = 0;
+
+        summParams.distributedFees.amount0 = 0;
+        summParams.distributedFees.amount1 = 0;
+        summParams.distributedDeposits.amount0 = 0;
+        summParams.distributedDeposits.amount1 = 0;
 
         return true;
     }
