@@ -102,16 +102,4 @@ contract RebalancerFactory is
             address(rebalancer)
         );
     }
-
-    function emergencyRefund(address[] calldata rebalancers)
-        external
-        override
-        onlyOwner
-        noDelegateCall
-    {
-        for (uint256 i = 0; i < rebalancers.length; i++) {
-            IRebalancer rebalancer = IRebalancer(rebalancers[i]);
-            rebalancer.immediateFundsReturn();
-        }
-    }
 }

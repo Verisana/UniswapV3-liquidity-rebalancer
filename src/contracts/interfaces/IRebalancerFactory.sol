@@ -50,6 +50,4 @@ interface IRebalancerFactory {
         address tokenB,
         uint24 fee
     ) external returns (address rebalancer);
-
-    function emergencyRefund(address[] calldata rebalancers) external;
 }

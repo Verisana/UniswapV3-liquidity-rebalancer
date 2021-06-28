@@ -213,8 +213,6 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         users = usersWithFunds;
     }
 
-    function immediateFundsReturn() external override restrictIfSummStarted {}
-
     // Methods for everyone
     function startSummarizeTrades() external restrictIfSummStarted {
         require(
