@@ -49,10 +49,15 @@ contract RebalancerFactory is
             _summarizationFrequency
         );
 
-        // Even owner can not set more than ~48 hours. This measure prevents misbehavior from owners side
+        // Even owner can not set more than ~48 hours and less than ~1 hour.
+        // This measure prevents misbehavior from owners side
         require(
             _summarizationFrequency < 11601,
             "Unreasonably big summarizationFrequency. Set it less than 11601"
+        );
+        require(
+            _summarizationFrequency > 240,
+            "Unreasonably small summarizationFrequency. Set it greater than 240"
         );
         summarizationFrequency = _summarizationFrequency;
     }
