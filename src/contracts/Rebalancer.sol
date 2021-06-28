@@ -52,7 +52,9 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
             fixedPrice: 0,
             toStake: Totals(0, 0),
             shareDenominator: 0,
-            sellToken0: false
+            sellToken0: false,
+            distributedFees: Totals(0, 0),
+            distributedDeposits: Totals(0, 0)
         });
 
     address[] public users;

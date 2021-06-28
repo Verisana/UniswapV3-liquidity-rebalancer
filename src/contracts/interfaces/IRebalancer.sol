@@ -34,6 +34,8 @@ interface IRebalancer {
         Totals toStake;
         uint256 shareDenominator;
         bool sellToken0;
+        Totals distributedFees;
+        Totals distributedDeposits;
     }
 
     // function factory() external view returns (address);
