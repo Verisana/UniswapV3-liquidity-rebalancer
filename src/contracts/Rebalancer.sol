@@ -17,23 +17,23 @@ import "./NoDelegateCall.sol";
 contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
     using SafeERC20 for IERC20;
 
-    IRebalancerFactory public immutable factory;
-    IUniswapV3Pool public immutable pool;
-    IERC20 public immutable token0;
-    IERC20 public immutable token1;
+    IRebalancerFactory public immutable override factory;
+    IUniswapV3Pool public immutable override pool;
+    IERC20 public immutable override token0;
+    IERC20 public immutable override token1;
 
     // They both should be immutable but compiler gives an error
-    bytes public path01;
-    bytes public path10;
+    bytes public override path01;
+    bytes public override path10;
 
-    INonfungiblePositionManager public immutable positionManager =
+    INonfungiblePositionManager public immutable override positionManager =
         INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
-    ISwapRouter public immutable swapRouter =
+    ISwapRouter public immutable override swapRouter =
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
-    Totals public feesIncome = Totals({amount0: 0, amount1: 0});
-    Totals public inStake = Totals({amount0: 0, amount1: 0});
-    Position public openPosition =
+    Totals public override feesIncome = Totals({amount0: 0, amount1: 0});
+    Totals public override inStake = Totals({amount0: 0, amount1: 0});
+    Position public override openPosition =
         Position({
             tokenId: 0,
             liquidity: 0,
@@ -44,7 +44,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         });
 
     // summParams = SummarizationParams
-    Summarize public summParams =
+    Summarize public override summParams =
         Summarize({
             lastBlock: 0,
             lastUser: 0,
@@ -58,8 +58,8 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         });
 
     address[] public users;
-    mapping(address => bool) isInUsers;
-    mapping(address => UserState) public userStates;
+    mapping(address => bool) public override isInUsers;
+    mapping(address => UserState) public override userStates;
 
     constructor() {
         address factoryAddress;
@@ -90,8 +90,9 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
     }
 
     // Methods only for users
-    function newDeposit(uint256 token0Amount, uint256 token1Amount)
+    function deposit(uint256 token0Amount, uint256 token1Amount)
         external
+        override
         restrictIfSummStarted
     {
         require(
@@ -110,16 +111,28 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         token0.safeTransfer(address(this), token0Amount);
         token1.safeTransfer(address(this), token1Amount);
 
-        userStates[msg.sender].deposit.amount0 += token0Amount;
-        userStates[msg.sender].deposit.amount1 += token1Amount;
+        userStates[msg.sender].deposited.amount0 += token0Amount;
+        userStates[msg.sender].deposited.amount1 += token1Amount;
+
+        emit UserDeposited(
+            msg.sender,
+            token0Amount,
+            token1Amount,
+            userStates[msg.sender]
+        );
 
         if (!isInUsers[msg.sender]) {
             isInUsers[msg.sender] = true;
             users.push(msg.sender);
+            emit UserCreated(msg.sender);
         }
     }
 
-    function withdraw(bool withdrawDeposit) external restrictIfSummStarted {
+    function withdraw(bool withdrawDeposit)
+        external
+        override
+        restrictIfSummStarted
+    {
         require(
             isInUsers[msg.sender],
             "You don't have deposits or never ever deposited"
@@ -134,23 +147,30 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         user.fee.amount1 = 0;
 
         if (withdrawDeposit) {
-            transferAmount.amount0 += user.deposit.amount0;
-            transferAmount.amount1 += user.deposit.amount1;
-            user.deposit.amount0 = 0;
-            user.deposit.amount1 = 0;
+            transferAmount.amount0 += user.deposited.amount0;
+            transferAmount.amount1 += user.deposited.amount1;
+            user.deposited.amount0 = 0;
+            user.deposited.amount1 = 0;
         }
 
         token0.safeTransfer(msg.sender, transferAmount.amount0);
         token1.safeTransfer(msg.sender, transferAmount.amount1);
+
+        emit UserWithdrawn(msg.sender, withdrawDeposit, transferAmount, user);
     }
 
-    function participateInStake() external restrictIfSummStarted {
+    function participate() external override restrictIfSummStarted {
         require(
             isInUsers[msg.sender],
             "You don't have deposits or never ever deposited"
         );
         userStates[msg.sender].participateInStake = !userStates[msg.sender]
         .participateInStake;
+        emit UserChangedStakeParticipation(
+            msg.sender,
+            userStates[msg.sender].participateInStake,
+            userStates[msg.sender]
+        );
     }
 
     // Methods only for factory Owner
@@ -160,7 +180,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         bool sellToken0,
         uint256 tokenIn,
         uint256 tokenOutMin
-    ) external onlyOwner restrictIfSummStarted {
+    ) external override onlyOwner restrictIfSummStarted {
         if (openPosition.tokenId == 0) {
             _openNewPosition(
                 tickLowerCount,
@@ -180,13 +200,27 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
                 tokenOutMin
             );
         }
+        emit PriceRebalanced(
+            tickLowerCount,
+            tickUpperCount,
+            sellToken0,
+            tokenIn,
+            tokenOutMin,
+            inStake,
+            feesIncome
+        );
     }
 
     // Here we also add functionality of sending unaccounted tokens to
     // the service owners. This helps to receive stuck funds, if ever appear.
     // I know, this is not good to have sideffects, but array iterating is very expensive
     // on Ethereum, so I decided to unite both operations here
-    function deleteUsersWithoutFunds() external restrictIfSummStarted {
+    function deleteUsersWithoutFunds()
+        external
+        override
+        onlyOwner
+        restrictIfSummStarted
+    {
         // We don't know beforehand array size, so we calculate it
         uint256 counter = 0;
 
@@ -208,10 +242,10 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         for (uint256 i = 0; i < users.length; i++) {
             calcBalance.amount0 +=
                 userStates[users[i]].fee.amount0 +
-                userStates[users[i]].deposit.amount0;
+                userStates[users[i]].deposited.amount0;
             calcBalance.amount1 +=
                 userStates[users[i]].fee.amount1 +
-                userStates[users[i]].deposit.amount1;
+                userStates[users[i]].deposited.amount1;
 
             if (isUserWithoutFunds(userStates[users[i]])) {
                 isInUsers[users[i]] = false;
@@ -224,7 +258,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         require(
             calcBalance.amount0 == realBalance.amount0 &&
                 calcBalance.amount1 == realBalance.amount1,
-            "Contract operates with flows. You haven't accounted some funds movements"
+            "The contract is misbehaving. You haven't accounted some funds movements"
         );
 
         _sendDiffToService(calcBalance, realBalance);
@@ -241,11 +275,12 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
             }
         }
 
+        emit UsersArrayReduced(users.length, usersWithFunds.length);
         users = usersWithFunds;
     }
 
     // Methods for everyone
-    function startSummarizeTrades() external restrictIfSummStarted {
+    function startSummarizeTrades() external override restrictIfSummStarted {
         require(
             block.number - summParams.lastBlock >=
                 factory.summarizationFrequency(),
@@ -255,13 +290,19 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         _collectFees();
         _removeLiquidityPosition();
         _distributeServiceFees();
+        emit TradeSummarizationStarted(
+            msg.sender,
+            summParams.stage,
+            block.number
+        );
     }
 
-    function summarizeUsersStates() external {
+    function summarizeUsersStates() external override {
         require(
             summParams.stage == 1 || summParams.stage == 2,
             "First start summarization proccess"
         );
+        emit StatesSummarizing(msg.sender, summParams, block.number);
         if (summParams.stage == 1) {
             bool success = _accountFeesAndStake();
             if (success) {
@@ -282,6 +323,33 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         }
     }
 
+    // Helper view methods for everyone
+    function getDeadline() public view override returns (uint256) {
+        return block.timestamp + 60;
+    }
+
+    function calcShare(
+        uint256 total,
+        uint256 numerator,
+        uint256 denominator
+    ) public pure override returns (uint256) {
+        return FullMath.mulDiv(total, numerator, denominator);
+    }
+
+    function isUserWithoutFunds(UserState memory user)
+        public
+        pure
+        override
+        returns (bool)
+    {
+        return
+            user.share == 0 &&
+            user.deposited.amount0 == 0 &&
+            user.deposited.amount1 == 0 &&
+            user.fee.amount1 == 0 &&
+            user.fee.amount1 == 0;
+    }
+
     // Internal helper methods
     function _sendDiffToService(
         Totals memory calcBalance,
@@ -292,6 +360,8 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
                 realBalance.amount1 >= calcBalance.amount1,
             "There are bugs in Rebalancer. You should never owe more tokens, than you have"
         );
+
+        emit BalanceDiffSentToService(realBalance, calcBalance);
 
         token0.safeTransfer(
             factory.owner(),
@@ -333,6 +403,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
                 })
             );
         }
+        emit TokensSwapped(sellToken0, tokenIn, tokenOutMin, inStake);
     }
 
     function _openNewPosition(
@@ -386,11 +457,13 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
             tickLower: tickLower,
             tickUpper: tickUpper
         });
+        emit NewPositionOpened(openPosition, inStake);
     }
 
     function _removeLiquidityPosition() private {
         if (openPosition.tokenId != 0) {
-            (uint256 amount0, uint256 amount1) = positionManager.decreaseLiquidity(
+            (uint256 amount0, uint256 amount1) = positionManager
+            .decreaseLiquidity(
                 INonfungiblePositionManager.DecreaseLiquidityParams({
                     tokenId: openPosition.tokenId,
                     liquidity: 0,
@@ -406,6 +479,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
             positionManager.burn(openPosition.tokenId);
 
             openPosition = Position(0, 0, 0, 0, 0, 0);
+            emit PositionClosed(amount0, amount1, inStake);
         }
     }
 
@@ -422,24 +496,28 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
 
             feesIncome.amount0 += feeAmount0;
             feesIncome.amount1 += feeAmount1;
+
+            emit FeesColected(feeAmount0, feeAmount1, feesIncome);
         }
     }
 
     function _distributeServiceFees() private {
         (uint256 numerator, uint256 denominator) = factory.rebalancerFee();
-        uint256 serviceFee;
+        uint256 serviceFee0;
+        uint256 serviceFee1;
 
-        serviceFee = calcShare(feesIncome.amount0, numerator, denominator);
-        if (serviceFee != 0) {
-            token0.safeTransfer(factory.owner(), serviceFee);
-            feesIncome.amount0 -= serviceFee;
+        serviceFee0 = calcShare(feesIncome.amount0, numerator, denominator);
+        if (serviceFee0 != 0) {
+            token0.safeTransfer(factory.owner(), serviceFee0);
+            feesIncome.amount0 -= serviceFee0;
         }
 
-        serviceFee = calcShare(feesIncome.amount1, numerator, denominator);
-        if (serviceFee != 0) {
-            token1.safeTransfer(factory.owner(), serviceFee);
-            feesIncome.amount1 -= serviceFee;
+        serviceFee1 = calcShare(feesIncome.amount1, numerator, denominator);
+        if (serviceFee1 != 0) {
+            token1.safeTransfer(factory.owner(), serviceFee1);
+            feesIncome.amount1 -= serviceFee1;
         }
+        emit SereviceFeeDistributed(serviceFee0, serviceFee1, feesIncome);
     }
 
     function _accountFeesAndStake() private returns (bool) {
@@ -482,8 +560,8 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
 
             user.fee.amount0 += userFee.amount0;
             user.fee.amount1 += userFee.amount1;
-            user.deposit.amount0 += userDeposit.amount0;
-            user.deposit.amount1 += userDeposit.amount1;
+            user.deposited.amount0 += userDeposit.amount0;
+            user.deposited.amount1 += userDeposit.amount1;
 
             summParams.distributedFees.amount0 += userFee.amount0;
             summParams.distributedFees.amount1 += userFee.amount1;
@@ -493,8 +571,8 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
             user.share = 0;
 
             if (user.participateInStake) {
-                summParams.toStake.amount0 += user.deposit.amount0;
-                summParams.toStake.amount1 += user.deposit.amount1;
+                summParams.toStake.amount0 += user.deposited.amount0;
+                summParams.toStake.amount1 += user.deposited.amount1;
             }
 
             if (loopCost == 0) {
@@ -526,6 +604,8 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         summParams.toStake.amount0 = 0;
         summParams.toStake.amount1 = 0;
 
+        emit DoneAccountingFeesAndStake(loopCost, inStake, summParams);
+
         summParams.distributedFees.amount0 = 0;
         summParams.distributedFees.amount1 = 0;
         summParams.distributedDeposits.amount0 = 0;
@@ -548,21 +628,21 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
             UserState memory user = userStates[users[i]];
 
             uint256 converted = summParams.sellToken0
-                ? user.deposit.amount0 * summParams.fixedPrice
-                : user.deposit.amount1 * summParams.fixedPrice;
+                ? user.deposited.amount0 * summParams.fixedPrice
+                : user.deposited.amount1 * summParams.fixedPrice;
 
             user.share = summParams.sellToken0
-                ? user.deposit.amount1 + converted
-                : user.deposit.amount0 + converted;
+                ? user.deposited.amount1 + converted
+                : user.deposited.amount0 + converted;
 
-            user.deposit.amount0 = 0;
-            user.deposit.amount1 = 0;
+            user.deposited.amount0 = 0;
+            user.deposited.amount1 = 0;
 
             if (loopCost == 0) {
                 loopCost = initGas - gasleft();
             }
         }
-
+        emit DoneCreatingNewStakes(loopCost, inStake, summParams);
         return true;
     }
 
@@ -592,31 +672,6 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
                 initAmount1;
             summParams.shareDenominator = inStake.amount0;
         }
-    }
-
-    // Helper view methods for everyone
-    function getDeadline() private view returns (uint256) {
-        return block.timestamp + 60;
-    }
-
-    function calcShare(
-        uint256 total,
-        uint256 numerator,
-        uint256 denominator
-    ) public pure returns (uint256) {
-        return FullMath.mulDiv(total, numerator, denominator);
-    }
-
-    function isUserWithoutFunds(UserState memory user)
-        public
-        pure
-        returns (bool)
-    {
-        return
-            user.share == 0 &&
-            user.deposit.amount0 == 0 &&
-            user.deposit.amount1 == 0 &&
-            user.fee.amount1 == 0 &&
-            user.fee.amount1 == 0;
+        emit SettedSummarizationConfigs(summParams);
     }
 }
