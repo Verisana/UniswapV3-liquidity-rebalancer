@@ -90,7 +90,7 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
     }
 
     modifier onlyFactoryOwner() {
-        require(msg.address == factory.owner());
+        require(msg.sender == factory.owner());
         _;
     }
 
