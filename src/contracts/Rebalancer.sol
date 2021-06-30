@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/finance/PaymentSplitter.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
@@ -12,9 +13,8 @@ import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "./interfaces/IRebalancerDeployer.sol";
 import "./interfaces/IRebalancerFactory.sol";
 import "./interfaces/IRebalancer.sol";
-import "./NoDelegateCall.sol";
 
-contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
+contract Rebalancer is IRebalancer, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IRebalancerFactory public immutable override factory;
@@ -98,6 +98,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
     function deposit(uint256 token0Amount, uint256 token1Amount)
         external
         override
+        nonReentrant
         restrictIfSummStarted
     {
         require(
@@ -136,6 +137,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
     function withdraw(bool withdrawDeposit)
         external
         override
+        nonReentrant
         restrictIfSummStarted
     {
         require(
@@ -164,7 +166,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         emit UserWithdrawn(msg.sender, withdrawDeposit, transferAmount, user);
     }
 
-    function participate() external override restrictIfSummStarted {
+    function participate() external override nonReentrant restrictIfSummStarted {
         require(
             isInUsers[msg.sender],
             "You don't have deposits or never ever deposited"
@@ -224,6 +226,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         external
         override
         onlyFactoryOwner
+        nonReentrant
         restrictIfSummStarted
     {
         // We don't know beforehand array size, so we calculate it
@@ -285,7 +288,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
     }
 
     // Methods for everyone
-    function startSummarizeTrades() external override restrictIfSummStarted {
+    function startSummarizeTrades() external override nonReentrant restrictIfSummStarted {
         require(
             block.number - summParams.lastBlock >=
                 factory.summarizationFrequency(),
@@ -302,7 +305,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         );
     }
 
-    function summarizeUsersStates() external override {
+    function summarizeUsersStates() external nonReentrant override {
         require(
             summParams.stage == 1 || summParams.stage == 2,
             "First start summarization proccess"
