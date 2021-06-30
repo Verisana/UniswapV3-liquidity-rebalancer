@@ -37,6 +37,16 @@ describe("Test RebalancerFactory contract", () => {
             5760
         );
     });
+    it("setting new owner", async () => {
+        const newOwner = accounts[1];
+        const notOwner = accounts[2];
+
+        const tryChange = rebalancerFactory.connect(notOwner).setOwner(await notOwner.getAddress())
+        expect(tryChange).to.be.revertedWith("Only owner can execute this function");
+
+        await rebalancerFactory.setOwner(await newOwner.getAddress());
+        expect(await rebalancerFactory.owner()).to.be.equal(await newOwner.getAddress());
+    });
 
     it("setting rebalancer fee", async () => {
         const expectedNumerator = 1;
