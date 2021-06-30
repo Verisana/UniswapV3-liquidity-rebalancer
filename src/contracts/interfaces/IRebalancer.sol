@@ -71,12 +71,12 @@ interface IRebalancer {
 
     event UsersArrayReduced(uint oldUsersCount, uint newUsersCount);
     event TradeSummarizationStarted(address sender, int64 status, uint startBlock);
-    event StatesSummarizing(address msg.sender, Summarize summParams, uint block.number);
-    event BalanceDiffSentToService(Toals realBalance, totals calcBalance);
+    event StatesSummarizing(address sender, Summarize summParams, uint blockNumber);
+    event BalanceDiffSentToService(Totals realBalance, Totals calcBalance);
     event TokensSwapped(bool sellToken0, uint tokenIn, uint tokenOutMin, Totals inStake);
     event NewPositionOpened(Position openPosition, Totals inStake);
     event PositionClosed(uint receivedAmount0, uint receivedAmount1, Totals inStake);
-    event FeesColected(receivedAmount0, receivedAmount1, Totals feesIncome);
+    event FeesColected(uint receivedAmount0, uint receivedAmount1, Totals feesIncome);
     event SereviceFeeDistributed(uint serviceFee0, uint serviceFee1, Totals feesIncome);
     event DoneAccountingFeesAndStake(uint loopCost, Totals inStake, Summarize summParams);
     event DoneCreatingNewStakes(uint loopCost, Totals inStake, Summarize summParams);
