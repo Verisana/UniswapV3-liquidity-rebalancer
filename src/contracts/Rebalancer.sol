@@ -89,6 +89,11 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         _;
     }
 
+    modifier onlyFactoryOwner() {
+        require(msg.address == factory.owner());
+        _;
+    }
+
     // Methods only for users
     function deposit(uint256 token0Amount, uint256 token1Amount)
         external
@@ -180,7 +185,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
         bool sellToken0,
         uint256 tokenIn,
         uint256 tokenOutMin
-    ) external override onlyOwner restrictIfSummStarted {
+    ) external override onlyFactoryOwner nonReentrant restrictIfSummStarted {
         if (openPosition.tokenId == 0) {
             _openNewPosition(
                 tickLowerCount,
@@ -218,7 +223,7 @@ contract Rebalancer is IRebalancer, Ownable, NoDelegateCall {
     function deleteUsersWithoutFunds()
         external
         override
-        onlyOwner
+        onlyFactoryOwner
         restrictIfSummStarted
     {
         // We don't know beforehand array size, so we calculate it
