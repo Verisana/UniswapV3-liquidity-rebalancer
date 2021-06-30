@@ -2,6 +2,9 @@ import "@typechain/hardhat";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
 import "solidity-coverage";
+import "hardhat-gas-reporter";
+import "hardhat-abi-exporter";
+import "hardhat-tracer";
 
 export default {
     defaultNetwork: "hardhat",
