@@ -23,6 +23,19 @@ describe("Test RebalancerFactory contract", () => {
         rebalancerFactory = await RebalancerFactory.deploy();
     });
 
-describe("Test Factory contract", () => {
-    it("deployment and properties", async () => {});
+    it("deployment and properties", async () => {
+        expect(await rebalancerFactory.owner()).to.be.equal(
+            await owner.getAddress()
+        );
+        expect(await rebalancerFactory.uniswapV3Factory()).to.be.equal(
+            "0x1F98431c8aD98523631AE4a59f267346ea31F984"
+        );
+        const rebalancerFee = await rebalancerFactory.rebalancerFee();
+        expect(rebalancerFee.numerator).to.be.equal(0);
+        expect(rebalancerFee.denominator).to.be.equal(0);
+        expect(await rebalancerFactory.summarizationFrequency()).to.be.equal(
+            5760
+        );
+    });
+
 });
