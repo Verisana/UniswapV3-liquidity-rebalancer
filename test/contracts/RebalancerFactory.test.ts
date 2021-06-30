@@ -47,6 +47,10 @@ describe("Test RebalancerFactory contract", () => {
         await rebalancerFactory.setOwner(await newOwner.getAddress());
         expect(await rebalancerFactory.owner()).to.be.equal(await newOwner.getAddress());
     });
+    it("owner restriction operating", async () => {});
+
+    it("setting block frequency", async () => {});
+    it("setting block frequency in wrong ranges", async () => {});
 
     it("setting rebalancer fee", async () => {
         const expectedNumerator = 1;
@@ -71,4 +75,6 @@ describe("Test RebalancerFactory contract", () => {
             "Numerator can not be >= denominator"
         );
     });
+
+    it("creating new Rebalancer", async () => {});
 });
