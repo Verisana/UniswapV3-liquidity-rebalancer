@@ -38,6 +38,17 @@ describe("Test RebalancerFactory contract", () => {
         );
     });
 
+    it("setting rebalancer fee", async () => {
+        const expectedNumerator = 1;
+        const expectedDenominator = 10;
+        await rebalancerFactory.setRebalanceFee(
+            expectedNumerator,
+            expectedDenominator
+        );
+        const rebalancerFee = await rebalancerFactory.rebalancerFee();
+        expect(rebalancerFee.numerator).to.be.equal(expectedNumerator);
+        expect(rebalancerFee.denominator).to.be.equal(expectedDenominator);
+    });
     it("setting rebalancer fee if denominator > numerator", async () => {
         const expectedNumerator = 10;
         const expectedDenominator = 1;
