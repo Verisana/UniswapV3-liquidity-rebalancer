@@ -25,7 +25,7 @@ contract RebalancerFactory is
     address public override owner;
 
     modifier onlyOwner() {
-        require(msg.sender == owner);
+        require(msg.sender == owner, "Only owner can execute this function");
         _;
     }
 
