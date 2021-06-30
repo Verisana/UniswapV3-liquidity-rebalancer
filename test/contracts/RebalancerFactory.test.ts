@@ -38,4 +38,16 @@ describe("Test RebalancerFactory contract", () => {
         );
     });
 
+    it("setting rebalancer fee if denominator > numerator", async () => {
+        const expectedNumerator = 10;
+        const expectedDenominator = 1;
+
+        const setErrorFee = rebalancerFactory.setRebalanceFee(
+            expectedNumerator,
+            expectedDenominator
+        );
+        expect(setErrorFee).to.be.revertedWith(
+            "Numerator can not be >= denominator"
+        );
+    });
 });
