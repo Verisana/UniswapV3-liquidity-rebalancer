@@ -11,3 +11,5 @@ cache
 artifacts
 typechain
 .pytest_cache
+abi/
+coverage.json
