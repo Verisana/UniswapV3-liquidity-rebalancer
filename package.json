@@ -5,8 +5,10 @@
     "scripts": {
         "compile": "npx hardhat compile",
         "tsc": "npx tsc -w",
-        "test": "npx mocha 'tests/**/*.test.ts'",
-        "coverage": "nyc npm run test",
+        "test:hh": "npx hardhat test",
+        "test:b": "npx mocha 'test/backend/**/*.test.ts'",
+        "coverage:hh": "npx hardhat coverage --testfiles \"test/contracts/**/*.test.ts\"",
+        "coverage:b": "nyc npm run test:b",
         "linter": "npx prettier --write './**/*.{ts,test.ts,tsx,json,sol}'"
     },
     "repository": {
