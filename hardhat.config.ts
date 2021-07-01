@@ -3,17 +3,15 @@ import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
 import "solidity-coverage";
 import "hardhat-gas-reporter";
-import "hardhat-abi-exporter";
 import "hardhat-tracer";
 
 export default {
     defaultNetwork: "hardhat",
     networks: {
         hardhat: {
-            hardfork: "berlin",
+            port: 8565,
             forking: {
                 url: "http://127.0.0.1:8545",
-                // blockNumber: 12372895,
                 enabled: true
             }
         }
@@ -33,12 +31,9 @@ export default {
     },
     paths: {
         sources: "./src/contracts",
-        tests: "./test",
+        tests: "./test/contracts",
         cache: "./dist/contracts/cache",
         artifacts: "./dist/contracts/artifacts"
-    },
-    abiExporter: {
-        path: "./dist/contracts/abi"
     },
     typechain: {
         outDir: "./dist/contracts/typechain"
