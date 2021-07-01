@@ -75,7 +75,19 @@ const executeRebalancing = (rebalancer: IRebalancer): boolean => {
     return true;
 };
 
-const main = async (provider: ethers.providers.Provider) => {
+const sendTransaction = async (func: Function): Promise<boolean> => {
+    try {
+        const tx = await func();
+        const receipt = await tx.wait();
+        console.log(`Executed ${func.name}`);
+        console.log(receipt);
+    } catch (e) {
+        console.log(e);
+        return false;
+    }
+    return true;
+};
+
     for await (const newBlockNumber of getLatestBlock(provider)) {
 
         console.log(newBlockNumber)
