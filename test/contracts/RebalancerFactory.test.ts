@@ -2,8 +2,8 @@ import { ethers } from "hardhat";
 import { Signer } from "ethers";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
-import { RebalancerFactory__factory } from "../../typechain/factories/RebalancerFactory__factory";
-import { RebalancerFactory } from "../../typechain/RebalancerFactory";
+import { RebalancerFactory__factory } from "../../dist/contracts/typechain/factories/RebalancerFactory__factory";
+import { RebalancerFactory } from "../../dist/contracts/typechain/RebalancerFactory";
 
 chai.use(solidity);
 const expect = chai.expect;
