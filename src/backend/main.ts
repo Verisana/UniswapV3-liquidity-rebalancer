@@ -24,3 +24,12 @@ async function* getLatestBlock(provider: ethers.providers.Provider) {
         }
     }
 };
+
+const main = async (provider: ethers.providers.Provider) => {
+    for await (const newBlockNumber of getLatestBlock(provider)) {
+
+        console.log(newBlockNumber)
+    }
+}
+
+main(provider).then(() => {})
