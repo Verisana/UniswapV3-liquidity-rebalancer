@@ -88,10 +88,42 @@ const sendTransaction = async (func: Function): Promise<boolean> => {
     return true;
 };
 
+const main = async () => {
+    const provider = getProvider();
+    const accounts = await hre.ethers.getSigners();
+    const rebalancer = (await getRebalancer(accounts[0])) as IRebalancer;
+
     for await (const newBlockNumber of getLatestBlock(provider)) {
+        console.log(newBlockNumber);
+        if (
+            needToStartSummarization(rebalancer) ||
+            summarizationInProcess(rebalancer)
+        ) {
+            let summParams = await rebalancer.summParams();
+            console.log(summParams.stage.toString());
+            if (summParams.stage.eq(0)) {
+                if (!sendTransaction(rebalancer.startSummarizeTrades)) continue;
 
-        console.log(newBlockNumber)
+                summParams = await rebalancer.summParams();
+                console.log(summParams.stage.toString());
+
+                do {
+                    if (!sendTransaction(rebalancer.summarizeUsersStates))
+                        break;
+                    summParams = await rebalancer.summParams();
+                    console.log(summParams.stage.toString());
+                } while (!summParams.stage.eq(0));
+            } else {
+                sendTransaction(rebalancer.summarizeUsersStates);
+            }
+        }
+        if (priceInPositionRange(rebalancer)) {
+            continue;
+        } else {
+            const rebalanceParams = calcRebalanceParams(rebalancer);
+            executeRebalancing(rebalancer);
+        }
     }
-}
+};
 
-main(provider).then(() => {})
+main().then(() => {});
