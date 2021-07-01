@@ -61,9 +61,10 @@
         "typescript": "^4.3.4"
     },
     "mocha": {
-        "register": "@ts-node/register",
+        "register": "ts-node/register",
         "reporter": "list",
-        "colors": true
+        "colors": true,
+        "timeout": 20000
     },
     "prettier": {
         "trailingComma": "none",

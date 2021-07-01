@@ -13,6 +13,10 @@ export default {
             forking: {
                 url: "http://127.0.0.1:8545",
                 enabled: true
+            },
+            mining: {
+                auto: true,
+                interval: 5000
             }
         }
     },
