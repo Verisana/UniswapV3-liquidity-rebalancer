@@ -6,7 +6,7 @@
         "checkJs": true /* Report errors in .js files. */,
         "sourceMap": true /* Generates corresponding '.map' file. */,
         "outDir": "./dist" /* Redirect output structure to the directory. */,
-        "typeRoots": ["./typechain", "./node_modules/@types"],
+        "rootDirs": ["./src", "./test"],
         "noEmitOnError": true,
         "resolveJsonModule": true,
         "strict": true,

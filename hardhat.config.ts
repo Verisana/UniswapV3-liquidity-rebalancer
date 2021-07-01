@@ -36,5 +36,11 @@ export default {
         tests: "./test",
         cache: "./dist/contracts/cache",
         artifacts: "./dist/contracts/artifacts"
+    },
+    abiExporter: {
+        path: "./dist/contracts/abi"
+    },
+    typechain: {
+        outDir: "./dist/contracts/typechain"
     }
 };
