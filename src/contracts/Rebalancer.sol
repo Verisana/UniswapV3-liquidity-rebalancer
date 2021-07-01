@@ -57,7 +57,7 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
             distributedDeposits: Totals(0, 0)
         });
 
-    address[] public users;
+    address[] public _users;
     mapping(address => bool) public override isInUsers;
     mapping(address => UserState) public override userStates;
 
@@ -129,7 +129,7 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
 
         if (!isInUsers[msg.sender]) {
             isInUsers[msg.sender] = true;
-            users.push(msg.sender);
+            _users.push(msg.sender);
             emit UserCreated(msg.sender);
         }
     }
@@ -166,7 +166,12 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         emit UserWithdrawn(msg.sender, withdrawDeposit, transferAmount, user);
     }
 
-    function participate() external override nonReentrant restrictIfSummStarted {
+    function participate()
+        external
+        override
+        nonReentrant
+        restrictIfSummStarted
+    {
         require(
             isInUsers[msg.sender],
             "You don't have deposits or never ever deposited"
@@ -247,19 +252,19 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
             inStake.amount1 + feesIncome.amount1
         );
 
-        for (uint256 i = 0; i < users.length; i++) {
+        for (uint256 i = 0; i < _users.length; i++) {
             calcBalance.amount0 +=
-                userStates[users[i]].fee.amount0 +
-                userStates[users[i]].deposited.amount0;
+                userStates[_users[i]].fee.amount0 +
+                userStates[_users[i]].deposited.amount0;
             calcBalance.amount1 +=
-                userStates[users[i]].fee.amount1 +
-                userStates[users[i]].deposited.amount1;
+                userStates[_users[i]].fee.amount1 +
+                userStates[_users[i]].deposited.amount1;
 
-            if (isUserWithoutFunds(userStates[users[i]])) {
-                isInUsers[users[i]] = false;
+            if (isUserWithoutFunds(userStates[_users[i]])) {
+                isInUsers[_users[i]] = false;
             } else {
                 counter++;
-                isInUsers[users[i]] = true;
+                isInUsers[_users[i]] = true;
             }
         }
 
@@ -276,19 +281,24 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         address[] memory usersWithFunds = new address[](counter);
 
         counter = 0;
-        for (uint256 i = 0; i < users.length; i++) {
-            if (isInUsers[users[i]]) {
-                usersWithFunds[counter] = users[i];
+        for (uint256 i = 0; i < _users.length; i++) {
+            if (isInUsers[_users[i]]) {
+                usersWithFunds[counter] = _users[i];
                 counter++;
             }
         }
 
-        emit UsersArrayReduced(users.length, usersWithFunds.length);
-        users = usersWithFunds;
+        emit UsersArrayReduced(_users.length, usersWithFunds.length);
+        _users = usersWithFunds;
     }
 
     // Methods for everyone
-    function startSummarizeTrades() external override nonReentrant restrictIfSummStarted {
+    function startSummarizeTrades()
+        external
+        override
+        nonReentrant
+        restrictIfSummStarted
+    {
         require(
             block.number - summParams.lastBlock >=
                 factory.summarizationFrequency(),
@@ -305,7 +315,7 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         );
     }
 
-    function summarizeUsersStates() external nonReentrant override {
+    function summarizeUsersStates() external override nonReentrant {
         require(
             summParams.stage == 1 || summParams.stage == 2,
             "First start summarization proccess"
@@ -317,7 +327,9 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
                 summParams.stage++;
                 summParams.lastUser = 0;
             }
-        } else if (summParams.stage == 2) {
+        }
+
+        if (summParams.stage == 2) {
             if (summParams.lastUser == 0) {
                 _setConfigsForSecondStage();
             }
@@ -332,6 +344,10 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
     }
 
     // Helper view methods for everyone
+    function users() external view override returns (address[] memory) {
+        return _users;
+    }
+
     function getDeadline() public view override returns (uint256) {
         return block.timestamp + 60;
     }
@@ -341,7 +357,10 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         uint256 numerator,
         uint256 denominator
     ) public pure override returns (uint256) {
-        return FullMath.mulDiv(total, numerator, denominator);
+        return
+            denominator == 0
+                ? 0
+                : FullMath.mulDiv(total, numerator, denominator);
     }
 
     function isUserWithoutFunds(UserState memory user)
@@ -533,12 +552,12 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         uint256 initGas = gasleft();
         uint256 loopCost = 0;
 
-        for (i; i < users.length; i++) {
+        for (i; i < _users.length; i++) {
             if (gasleft() < loopCost) {
                 summParams.lastUser = i;
                 return false;
             }
-            UserState storage user = userStates[users[i]];
+            UserState storage user = userStates[_users[i]];
 
             Totals memory userFee = Totals(0, 0);
             Totals memory userDeposit = Totals(0, 0);
@@ -627,13 +646,13 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         uint256 initGas = gasleft();
         uint256 loopCost = 0;
 
-        for (i; i < users.length; i++) {
+        for (i; i < _users.length; i++) {
             if (gasleft() < loopCost) {
                 summParams.lastUser = i;
                 return false;
             }
 
-            UserState memory user = userStates[users[i]];
+            UserState memory user = userStates[_users[i]];
 
             uint256 converted = summParams.sellToken0
                 ? user.deposited.amount0 * summParams.fixedPrice

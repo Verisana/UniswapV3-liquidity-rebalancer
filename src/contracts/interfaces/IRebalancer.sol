@@ -136,7 +136,7 @@ interface IRebalancer {
             Totals memory distributedDeposits
         );
 
-    // function users() external view returns (address[]);
+    function users() external view returns (address[] memory);
 
     function isInUsers(address) external view returns (bool);
 
