@@ -19,7 +19,7 @@ describe("Test Rebalancer contract", () => {
             3000
         );
         tx = await tx.wait();
-        const rebalancerAddress = tx.events[1].args.rebalancer;
+        const rebalancerAddress = tx.events[0].args.rebalancer;
         const rebalancer = await ethers.getContractAt(
             "Rebalancer",
             rebalancerAddress
