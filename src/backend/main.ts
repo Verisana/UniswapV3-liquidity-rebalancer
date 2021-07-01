@@ -3,3 +3,13 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
+let provider: ethers.providers.Provider;
+if (process.env.PROVIDER === undefined) throw `PROVIDER is undefined`;
+
+if (process.env.PROVIDER_TYPE == "ipc") {
+    provider = new ethers.providers.IpcProvider(process.env.PROVIDER);
+} else if (process.env.PROVIDER_TYPE == "http") {
+    provider = new ethers.providers.JsonRpcProvider(process.env.PROVIDER);
+} else {
+    throw `Unrecognized PROVIDER_TYPE == ${process.env.PROVIDER_TYPE}`;
+}
