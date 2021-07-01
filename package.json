@@ -5,6 +5,7 @@
     "scripts": {
         "compile": "npx hardhat compile",
         "tsc": "npx tsc -w",
+        "node": "npx hardhat node --port 8565 --fork http://127.0.0.1:8545",
         "test:hh": "npx hardhat test",
         "test:b": "npx mocha 'test/backend/**/*.test.ts'",
         "coverage:hh": "npx hardhat coverage --testfiles \"test/contracts/**/*.test.ts\"",
@@ -47,7 +48,6 @@
         "eslint-plugin-prettier": "^3.4.0",
         "ethereum-waffle": "^3.4.0",
         "hardhat": "^2.4.1",
-        "hardhat-abi-exporter": "^2.2.1",
         "hardhat-gas-reporter": "^1.0.4",
         "mocha": "^9.0.0",
         "nyc": "^15.1.0",
