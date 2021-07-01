@@ -13,3 +13,14 @@ if (process.env.PROVIDER_TYPE == "ipc") {
 } else {
     throw `Unrecognized PROVIDER_TYPE == ${process.env.PROVIDER_TYPE}`;
 }
+
+async function* getLatestBlock(provider: ethers.providers.Provider) {
+    let lastSeenBlockNumber = await provider.getBlockNumber();
+    while (true) {
+        const latestBlockNumber = await provider.getBlockNumber();
+        if (latestBlockNumber > lastSeenBlockNumber) {
+            lastSeenBlockNumber = latestBlockNumber;
+            yield lastSeenBlockNumber
+        }
+    }
+};
