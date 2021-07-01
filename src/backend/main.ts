@@ -54,9 +54,25 @@ async function* getLatestBlock(provider: ethers.providers.Provider) {
         const latestBlockNumber = await provider.getBlockNumber();
         if (latestBlockNumber > lastSeenBlockNumber) {
             lastSeenBlockNumber = latestBlockNumber;
-            yield lastSeenBlockNumber
+            yield lastSeenBlockNumber;
         }
     }
+}
+
+const needToStartSummarization = (rebalancer: IRebalancer): boolean => {
+    return true;
+};
+const summarizationInProcess = (rebalancer: IRebalancer): boolean => {
+    return true;
+};
+const priceInPositionRange = (rebalancer: IRebalancer): boolean => {
+    return true;
+};
+const calcRebalanceParams = (rebalancer: IRebalancer): number => {
+    return 0;
+};
+const executeRebalancing = (rebalancer: IRebalancer): boolean => {
+    return true;
 };
 
 const main = async (provider: ethers.providers.Provider) => {
