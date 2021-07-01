@@ -19,6 +19,35 @@ const getProvider = (): ethers.providers.Provider => {
     return provider;
 };
 
+const getRebalancer = async (
+    signer: ethers.Signer
+): Promise<ethers.Contract> => {
+    let rebalancerAddress: string;
+    if (process.env.NODE_ENV == "development") {
+        const RebalancerFactory = await hre.ethers.getContractFactory(
+            "RebalancerFactory",
+            signer
+        );
+        let hardhatRebalancerFactory = await RebalancerFactory.deploy();
+        let tx = await hardhatRebalancerFactory.createRebalancer(
+            "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", // WETH
+            "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
+            3000
+        );
+        tx = await tx.wait();
+        rebalancerAddress = tx.events[0].args.rebalancer;
+    } else {
+        if (process.env.REBALANCER_ADDRESS === undefined)
+            throw "In production contract should be deployed. You must set contract address";
+        rebalancerAddress = process.env.REBALANCER_ADDRESS;
+    }
+    const rebalancer = await hre.ethers.getContractAt(
+        "Rebalancer",
+        rebalancerAddress
+    );
+    return rebalancer;
+};
+
 async function* getLatestBlock(provider: ethers.providers.Provider) {
     let lastSeenBlockNumber = await provider.getBlockNumber();
     while (true) {
