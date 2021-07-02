@@ -1,7 +1,8 @@
-import { ethers } from "ethers";
+import { ethers, providers } from "ethers";
 import hre from "hardhat";
 import * as dotenv from "dotenv";
 import { IRebalancer } from "../../dist/contracts/typechain/IRebalancer";
+import { IRebalancerFactory } from "../../dist/contracts/typechain/IRebalancerFactory";
 
 dotenv.config();
 
@@ -21,14 +22,16 @@ const getProvider = (): ethers.providers.Provider => {
 
 const getRebalancer = async (
     signer: ethers.Signer
-): Promise<ethers.Contract> => {
+): Promise<[ethers.Contract, ethers.Contract]> => {
     let rebalancerAddress: string;
+    let hardhatRebalancerFactory;
+
     if (process.env.NODE_ENV == "development") {
         const RebalancerFactory = await hre.ethers.getContractFactory(
             "RebalancerFactory",
             signer
         );
-        let hardhatRebalancerFactory = await RebalancerFactory.deploy();
+        hardhatRebalancerFactory = await RebalancerFactory.deploy();
         let tx = await hardhatRebalancerFactory.createRebalancer(
             "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", // WETH
             "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
@@ -45,7 +48,11 @@ const getRebalancer = async (
         "Rebalancer",
         rebalancerAddress
     );
-    return rebalancer;
+    hardhatRebalancerFactory = await hre.ethers.getContractAt(
+        "RebalancerFactory",
+        await rebalancer.factory()
+    );
+    return [rebalancer, hardhatRebalancerFactory];
 };
 
 async function* getLatestBlock(provider: ethers.providers.Provider) {
