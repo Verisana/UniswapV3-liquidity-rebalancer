@@ -111,6 +111,20 @@ const sendTransaction = async (
         return false;
     }
 };
+
+const summarizeUsersStatesTillTheEnd = async (rebalancer: IRebalancer): Promise<boolean> => {
+    let summParams = await rebalancer.summParams();
+    do {
+        await sendTransaction(
+            rebalancer.summarizeUsersStates,
+            "summarizeUsersStates"
+        );
+
+        summParams = await rebalancer.summParams();
+        console.log(summParams.stage.toString());
+    } while (!summParams.stage.eq(0));
+
+    return true
 };
 
 const main = async () => {
