@@ -3,6 +3,8 @@ import hre from "hardhat";
 import * as dotenv from "dotenv";
 import { IRebalancer } from "../../dist/contracts/typechain/IRebalancer";
 import { IRebalancerFactory } from "../../dist/contracts/typechain/IRebalancerFactory";
+import { IUniswapV3Pool } from "../../dist/contracts/typechain/IUniswapV3Pool";
+import { Position } from "@uniswap/v3-sdk"
 
 dotenv.config();
 
@@ -20,9 +22,9 @@ const getProvider = (): ethers.providers.Provider => {
     return provider;
 };
 
-const getRebalancer = async (
+const getContracts = async (
     signer: ethers.Signer
-): Promise<[ethers.Contract, ethers.Contract]> => {
+): Promise<[ethers.Contract, ethers.Contract, ethers.Contract]> => {
     let rebalancerAddress: string;
     let hardhatRebalancerFactory;
 
@@ -132,7 +134,7 @@ const main = async () => {
     const accounts = await hre.ethers.getSigners();
     const [rebalancer, factory] = (await getRebalancer(accounts[0])) as [
         IRebalancer,
-        IRebalancerFactory
+        IUniswapV3Pool
     ];
 
     for await (const newBlockNumber of getLatestBlock(provider)) {
