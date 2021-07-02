@@ -77,9 +77,14 @@ const needToStartSummarization = async (
     // (lastBlock - summParams.lastBlock) >= frequency
     return lastBlock.sub(summParams.lastBlock).gte(frequency);
 };
-const summarizationInProcess = (rebalancer: IRebalancer): boolean => {
-    return true;
+
+const summarizationInProcess = async (
+    rebalancer: IRebalancer
+): Promise<boolean> => {
+    const summParams = await rebalancer.summParams();
+    return summParams.stage.gt(0);
 };
+
 const priceInPositionRange = (rebalancer: IRebalancer): boolean => {
     return true;
 };
