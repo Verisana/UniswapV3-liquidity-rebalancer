@@ -111,6 +111,10 @@ interface RebalancePriceRangeParams {
     tokenOutMin: ethers.BigNumber;
 }
 
+interface RebalancerConfig {
+    slippage: number;
+}
+
 };
 const executeRebalancing = (rebalancer: IRebalancer): boolean => {
     return true;
