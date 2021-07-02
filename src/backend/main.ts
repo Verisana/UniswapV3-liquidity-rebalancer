@@ -137,7 +137,9 @@ const sendTransaction = async (
     }
 };
 
-const summarizeUsersStatesTillTheEnd = async (rebalancer: IRebalancer): Promise<boolean> => {
+const summarizeUsersStatesTillTheEnd = async (
+    rebalancer: IRebalancer
+): Promise<boolean> => {
     let summParams = await rebalancer.summParams();
     do {
         await sendTransaction(
@@ -149,7 +151,7 @@ const summarizeUsersStatesTillTheEnd = async (rebalancer: IRebalancer): Promise<
         console.log(summParams.stage.toString());
     } while (!summParams.stage.eq(0));
 
-    return true
+    return true;
 };
 
 const main = async () => {
