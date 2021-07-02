@@ -157,10 +157,13 @@ const summarizeUsersStatesTillTheEnd = async (
 const main = async () => {
     const provider = getProvider();
     const accounts = await hre.ethers.getSigners();
-    const [rebalancer, factory] = (await getRebalancer(accounts[0])) as [
+    const [rebalancer, factory, pool] = (await getContracts(accounts[0])) as [
         IRebalancer,
+        IRebalancerFactory,
         IUniswapV3Pool
     ];
+
+    config: RebalancerConfig = {};
 
     for await (const newBlockNumber of getLatestBlock(provider)) {
         console.log(newBlockNumber);
@@ -181,10 +184,10 @@ const main = async () => {
             await summarizeUsersStatesTillTheEnd(rebalancer);
         }
 
-        if (priceInPositionRange(rebalancer)) {
+        if (priceInPositionRange(rebalancer, pool)) {
             continue;
         } else {
-            const rebalanceParams = calcRebalanceParams(rebalancer);
+            const rebalanceParams = calcRebalanceParams(rebalancer, pool);
             executeRebalancing(rebalancer);
         }
     }
