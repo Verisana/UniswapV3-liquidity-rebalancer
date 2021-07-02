@@ -61,7 +61,7 @@ async function* getLatestBlock(provider: ethers.providers.Provider) {
         const latestBlockNumber = await provider.getBlockNumber();
         if (latestBlockNumber > lastSeenBlockNumber) {
             lastSeenBlockNumber = latestBlockNumber;
-            yield lastSeenBlockNumber;
+            yield ethers.BigNumber.from(lastSeenBlockNumber);
         }
     }
 }
