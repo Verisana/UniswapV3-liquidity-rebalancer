@@ -115,6 +115,17 @@ interface RebalancerConfig {
     slippage: number;
 }
 
+// Tokens amount should be rearranged ~50/50 on each tick side
+const calcParamsForTokenEquilibrium = async (
+    rebalancer: IRebalancer,
+    pool: IUniswapV3Pool,
+    position: Position
+): [boolean, ethers.BigNumber, ethers.BigNumber] => {
+    const openPosition = await rebalancer.openPosition();
+    const slot0 = await pool.slot0();
+
+    const toSplit = slot0.tick > openPosition.tickUpper ? 1 : 0;
+
 };
 
 const calcRebalanceParams = (
