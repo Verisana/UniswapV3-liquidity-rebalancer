@@ -130,32 +130,30 @@ const summarizeUsersStatesTillTheEnd = async (rebalancer: IRebalancer): Promise<
 const main = async () => {
     const provider = getProvider();
     const accounts = await hre.ethers.getSigners();
-    const rebalancer = (await getRebalancer(accounts[0])) as IRebalancer;
+    const [rebalancer, factory] = (await getRebalancer(accounts[0])) as [
+        IRebalancer,
+        IRebalancerFactory
+    ];
 
     for await (const newBlockNumber of getLatestBlock(provider)) {
         console.log(newBlockNumber);
         if (
-            needToStartSummarization(rebalancer) ||
+            needToStartSummarization(rebalancer, factory, newBlockNumber) ||
             summarizationInProcess(rebalancer)
         ) {
             let summParams = await rebalancer.summParams();
-            console.log(summParams.stage.toString());
             if (summParams.stage.eq(0)) {
-                if (!sendTransaction(rebalancer.startSummarizeTrades)) continue;
+                let result = await sendTransaction(
+                    rebalancer.startSummarizeTrades,
+                    "startSummarizeTrades"
+                );
 
-                summParams = await rebalancer.summParams();
-                console.log(summParams.stage.toString());
-
-                do {
-                    if (!sendTransaction(rebalancer.summarizeUsersStates))
-                        break;
-                    summParams = await rebalancer.summParams();
-                    console.log(summParams.stage.toString());
-                } while (!summParams.stage.eq(0));
-            } else {
-                sendTransaction(rebalancer.summarizeUsersStates);
+                // If we get error, we shouldn't continue next stage
+                if (!result) continue;
             }
+            await summarizeUsersStatesTillTheEnd(rebalancer);
         }
+
         if (priceInPositionRange(rebalancer)) {
             continue;
         } else {
