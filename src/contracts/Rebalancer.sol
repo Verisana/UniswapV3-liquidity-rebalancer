@@ -14,6 +14,8 @@ import "./interfaces/IRebalancerDeployer.sol";
 import "./interfaces/IRebalancerFactory.sol";
 import "./interfaces/IRebalancer.sol";
 
+import "hardhat/console.sol";
+
 contract Rebalancer is IRebalancer, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -323,18 +325,18 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         emit StatesSummarizing(msg.sender, summParams, block.number);
         if (summParams.stage == 1) {
             bool success = _accountFeesAndStake();
+
             if (success) {
                 summParams.stage++;
                 summParams.lastUser = 0;
             }
         }
-
         if (summParams.stage == 2) {
             if (summParams.lastUser == 0) {
                 _setConfigsForSecondStage();
             }
-
             bool success = _createNewStake();
+
             if (success) {
                 summParams.stage = 0;
                 summParams.lastUser = 0;
@@ -685,19 +687,30 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         // We swap all tokens into one asset and do it to the side of
         // smaller amount in order to counter-balance price movement
         if (inStake.amount0 > inStake.amount1) {
+
             summParams.sellToken0 = true;
-            _swapTokens(summParams.sellToken0, inStake.amount0, 0);
-            summParams.fixedPrice =
-                (inStake.amount1 - initAmount1) /
-                initAmount0;
-            summParams.shareDenominator = inStake.amount1;
+            if (inStake.amount0 > 0) {
+                    _swapTokens(summParams.sellToken0, inStake.amount0, 0);
+            }
+
+            if (initAmount0 > 0) {
+                summParams.fixedPrice =
+                    (inStake.amount1 - initAmount1) /
+                    initAmount0;
+                summParams.shareDenominator = inStake.amount1;
+            }
         } else {
             summParams.sellToken0 = false;
-            _swapTokens(summParams.sellToken0, inStake.amount1, 0);
-            summParams.fixedPrice =
-                (inStake.amount0 - initAmount0) /
-                initAmount1;
-            summParams.shareDenominator = inStake.amount0;
+            if (inStake.amount1 > 0) {
+                _swapTokens(summParams.sellToken0, inStake.amount1, 0);
+            }
+
+            if (initAmount1 > 0) {
+                summParams.fixedPrice =
+                    (inStake.amount0 - initAmount0) /
+                    initAmount1;
+                summParams.shareDenominator = inStake.amount0;
+            }
         }
         emit SettedSummarizationConfigs(summParams);
     }
