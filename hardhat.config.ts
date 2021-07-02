@@ -7,6 +7,9 @@ import "hardhat-tracer";
 
 export default {
     defaultNetwork: "hardhat",
+    accounts: {
+        accountsBalance: "10000000000000000000000000"  // 10 000 000 ETH
+    },
     networks: {
         hardhat: {
             port: 8565,
