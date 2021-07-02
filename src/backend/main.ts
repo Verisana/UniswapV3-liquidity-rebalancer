@@ -66,8 +66,16 @@ async function* getLatestBlock(provider: ethers.providers.Provider) {
     }
 }
 
-const needToStartSummarization = (rebalancer: IRebalancer): boolean => {
-    return true;
+const needToStartSummarization = async (
+    rebalancer: IRebalancer,
+    factory: IRebalancerFactory,
+    lastBlock: ethers.BigNumber
+): Promise<boolean> => {
+    const summParams = await rebalancer.summParams();
+    const frequency = await factory.summarizationFrequency();
+
+    // (lastBlock - summParams.lastBlock) >= frequency
+    return lastBlock.sub(summParams.lastBlock).gte(frequency);
 };
 const summarizationInProcess = (rebalancer: IRebalancer): boolean => {
     return true;
