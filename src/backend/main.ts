@@ -91,9 +91,18 @@ const summarizationInProcess = async (
     return summParams.stage.gt(0);
 };
 
-const priceInPositionRange = (rebalancer: IRebalancer): boolean => {
-    return true;
+const priceInPositionRange = async (
+    rebalancer: IRebalancer,
+    pool: IUniswapV3Pool
+): Promise<boolean> => {
+    const openPosition = await rebalancer.openPosition();
+    const slot0 = await pool.slot0();
+    return (
+        slot0.tick >= openPosition.tickLower &&
+        slot0.tick <= openPosition.tickUpper
+    );
 };
+
 const calcRebalanceParams = (rebalancer: IRebalancer): number => {
     return 0;
 };
