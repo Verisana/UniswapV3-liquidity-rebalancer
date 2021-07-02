@@ -95,17 +95,22 @@ const executeRebalancing = (rebalancer: IRebalancer): boolean => {
     return true;
 };
 
-const sendTransaction = async (func: Function): Promise<boolean> => {
+const sendTransaction = async (
+    func: Function,
+    name: string
+): Promise<boolean> => {
     try {
         const tx = await func();
         const receipt = await tx.wait();
-        console.log(`Executed ${func.name}`);
+        console.log(`Executed ${name}`);
         console.log(receipt);
+        return true;
     } catch (e) {
         console.log(e);
+        console.log(e.transactionHash);
         return false;
     }
-    return true;
+};
 };
 
 const main = async () => {
