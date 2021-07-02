@@ -115,6 +115,13 @@ interface RebalancerConfig {
     slippage: number;
 }
 
+const calcTickRanges = (
+    rebalancer: IRebalancer
+): [ethers.BigNumber, ethers.BigNumber] => {
+    // const inStake =
+    // return [tickLowerCount, tickUpperCount]
+};
+
 // Tokens amount should be rearranged ~50/50 on each tick side
 const calcParamsForTokenEquilibrium = async (
     rebalancer: IRebalancer,
