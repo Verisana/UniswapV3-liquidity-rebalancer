@@ -116,6 +116,29 @@ interface RebalancerConfig {
 }
 
 };
+
+const calcRebalanceParams = (
+    rebalancer: IRebalancer,
+    pool: IUniswapV3Pool,
+    config: RebalancerConfig
+): RebalancePriceRangeParams => {
+    const;
+
+    const [tickLowerCount, tickUpperCount] = calcTickRanges(rebalancer);
+    const [sellToken0, tokenIn, tokenOutMin] =
+        calcEquilibriumParams(rebalancer);
+
+    const params: RebalancePriceRangeParams = {
+        tickLowerCount: tickLowerCount,
+        tickUpperCount: tickUpperCount,
+        sellToken0: sellToken0,
+        tokenIn: tokenIn,
+        tokenOutMin: tokenOutMin
+    };
+
+    return params;
+};
+
 const executeRebalancing = (rebalancer: IRebalancer): boolean => {
     return true;
 };
