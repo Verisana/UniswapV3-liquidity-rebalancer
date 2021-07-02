@@ -54,7 +54,11 @@ const getContracts = async (
         "RebalancerFactory",
         await rebalancer.factory()
     );
-    return [rebalancer, hardhatRebalancerFactory];
+    const pool = await hre.ethers.getContractAt(
+        "UniswapV3Pool",
+        await rebalancer.pool()
+    );
+    return [rebalancer, hardhatRebalancerFactory, pool];
 };
 
 async function* getLatestBlock(provider: ethers.providers.Provider) {
