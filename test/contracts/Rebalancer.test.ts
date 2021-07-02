@@ -1,5 +1,6 @@
 import expect from "chai";
 import { ethers } from "hardhat";
+import { IRebalancer } from "../../dist/contracts/typechain/IRebalancer";
 import { tokens } from "../fixtures";
 
 describe("Test Rebalancer contract", () => {
@@ -20,10 +21,11 @@ describe("Test Rebalancer contract", () => {
         );
         tx = await tx.wait();
         const rebalancerAddress = tx.events[0].args.rebalancer;
-        const rebalancer = await ethers.getContractAt(
+        const rebalancer = (await ethers.getContractAt(
             "Rebalancer",
             rebalancerAddress
-        );
+        )) as IRebalancer;
+
         const poolAddress = await rebalancer.pool();
         const pool = await ethers.getContractAt("IUniswapV3Pool", poolAddress);
         const tickSpacing = await pool.tickSpacing();
