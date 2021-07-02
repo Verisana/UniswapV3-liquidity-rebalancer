@@ -103,8 +103,14 @@ const priceInPositionRange = async (
     );
 };
 
-const calcRebalanceParams = (rebalancer: IRebalancer): number => {
-    return 0;
+interface RebalancePriceRangeParams {
+    tickLowerCount: ethers.BigNumber;
+    tickUpperCount: ethers.BigNumber;
+    sellToken0: boolean;
+    tokenIn: ethers.BigNumber;
+    tokenOutMin: ethers.BigNumber;
+}
+
 };
 const executeRebalancing = (rebalancer: IRebalancer): boolean => {
     return true;
