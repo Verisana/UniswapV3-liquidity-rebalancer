@@ -158,11 +158,10 @@ const sendTransaction = async (
         const tx = await func();
         const receipt = await tx.wait();
         console.log(`Executed ${name}`);
-        console.log(receipt);
+        // console.log(receipt);
         return true;
     } catch (e) {
         console.log(e);
-        console.log(e.transactionHash);
         return false;
     }
 };
@@ -172,10 +171,11 @@ const summarizeUsersStatesTillTheEnd = async (
 ): Promise<boolean> => {
     let summParams = await rebalancer.summParams();
     do {
-        await sendTransaction(
+        let result = await sendTransaction(
             rebalancer.summarizeUsersStates,
             "summarizeUsersStates"
         );
+        if (!result) return false;
 
         summParams = await rebalancer.summParams();
         console.log(summParams.stage.toString());
