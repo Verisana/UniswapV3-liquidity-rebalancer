@@ -9,6 +9,11 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 dotenv.config();
 
+const tokens = {
+    WETH: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    USDC: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+};
+
 const getProvider = (): ethers.providers.Provider => {
     let provider: ethers.providers.Provider;
     if (process.env.PROVIDER === undefined) throw `PROVIDER is undefined`;
@@ -36,8 +41,8 @@ const getContracts = async (
         );
         hardhatRebalancerFactory = await RebalancerFactory.deploy();
         let tx = await hardhatRebalancerFactory.createRebalancer(
-            "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", // WETH
-            "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
+            tokens.WETH,
+            tokens.USDC,
             3000
         );
         tx = await tx.wait();
