@@ -210,21 +210,33 @@ const depositFundsToRebalancer = async (
 
 const main = async () => {
     const provider = getProvider();
+
+    // Here we have: owner, userA, userB, userC and others are all considered traders
     const accounts = await hre.ethers.getSigners();
     const [rebalancer, factory, pool] = (await getContracts(accounts[0])) as [
         IRebalancer,
         IRebalancerFactory,
         IUniswapV3Pool
     ];
-
-    config: RebalancerConfig = {};
+    console.log("All contracts has been initialized");
+    const depositAmounts = [
+        ethers.BigNumber.from("200000000000000000000"), // 200 ETH
+        ethers.BigNumber.from("74000000000000000000"), // 74 ETH
+        ethers.BigNumber.from("1000000000000000000") // 1 ETH
+    ];
+    depositFundsToRebalancer(rebalancer, accounts.slice(1, 4), depositAmounts);
 
     for await (const newBlockNumber of getLatestBlock(provider)) {
-        console.log(newBlockNumber);
+        console.log(`Received new block ${newBlockNumber}`);
         if (
-            needToStartSummarization(rebalancer, factory, newBlockNumber) ||
-            summarizationInProcess(rebalancer)
+            (await needToStartSummarization(
+                rebalancer,
+                factory,
+                newBlockNumber
+            )) ||
+            (await summarizationInProcess(rebalancer))
         ) {
+            console.log("Summarization time has come!");
             let summParams = await rebalancer.summParams();
             if (summParams.stage.eq(0)) {
                 let result = await sendTransaction(
@@ -236,13 +248,59 @@ const main = async () => {
                 if (!result) continue;
             }
             await summarizeUsersStatesTillTheEnd(rebalancer);
+            const inStake = await rebalancer.inStake();
+            const userA = await rebalancer.userStates(accounts[1].address);
+            const userB = await rebalancer.userStates(accounts[2].address);
+            const userC = await rebalancer.userStates(accounts[3].address);
+            summParams = await rebalancer.summParams();
+
+            console.log(
+                `Total stake. Amount0: ${inStake.amount0.toString()}. Amount1: ${inStake.amount1.toString()}`
+            );
+            console.log(
+                `UserA share: ${userA.share.toString()}. Denominator ${summParams.shareDenominator.toString()}`
+            );
+            console.log(
+                `UserB share: ${userB.share.toString()}. Denominator ${summParams.shareDenominator.toString()}`
+            );
+            console.log(
+                `UserC share: ${userC.share.toString()}. Denominator ${summParams.shareDenominator.toString()}`
+            );
         }
 
-        if (priceInPositionRange(rebalancer, pool)) {
+        if (await priceInPositionRange(rebalancer, pool)) {
+            console.log("Price in position range");
             continue;
         } else {
-            const rebalanceParams = calcRebalanceParams(rebalancer, pool);
-            executeRebalancing(rebalancer);
+            const [tickLowerCount, tickUpperCount, token0Share, token1Share] =
+                calcRebalanceParams(rebalancer, pool);
+
+            await rebalancer.rebalancePriceRange(
+                tickLowerCount,
+                tickUpperCount,
+                token0Share,
+                token1Share
+            );
+            // await sendTransaction(
+            //     rebalancer.rebalancePriceRange.bind(
+            //         tickLowerCount,
+            //         tickUpperCount,
+            //         token0Share,
+            //         token1Share
+            //     ),
+            //     "rebalancePriceRange"
+            // );
+            const position = await rebalancer.openPosition();
+            const inStake = await rebalancer.inStake();
+
+            console.log(
+                `New position opened: from ${position.tickLower.toString()} ` +
+                    `to ${position.tickUpper.toString()}`
+            );
+            console.log(
+                `Remained inStake is ${inStake.amount0.toString()} ` +
+                    `and ${inStake.amount1.toString()}`
+            );
         }
     }
 };
