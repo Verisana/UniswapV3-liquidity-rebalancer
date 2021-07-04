@@ -62,24 +62,62 @@ interface IRebalancer {
     event PriceRebalanced(
         int24 tickLowerCount,
         int24 tickUpperCount,
-        bool sellToken0,
-        uint256 tokenIn,
-        uint256 tokenOutMin,
+        uint256 token0Share,
+        uint256 token1Share,
         Totals inStake,
         Totals feesIncome
     );
 
-    event UsersArrayReduced(uint oldUsersCount, uint newUsersCount);
-    event TradeSummarizationStarted(address sender, int64 status, uint startBlock);
-    event StatesSummarizing(address sender, Summarize summParams, uint blockNumber);
+    event UsersArrayReduced(uint256 oldUsersCount, uint256 newUsersCount);
+    event TradeSummarizationStarted(
+        address sender,
+        int64 status,
+        uint256 startBlock
+    );
+    event StatesSummarizing(
+        address sender,
+        Summarize summParams,
+        uint256 blockNumber
+    );
     event BalanceDiffSentToService(Totals realBalance, Totals calcBalance);
-    event TokensSwapped(bool sellToken0, uint tokenIn, uint tokenOutMin, Totals inStake);
+    event TokensRationChanged(
+        uint256 token0Share,
+        uint256 token1Share,
+        uint256 toSell,
+        Totals inStake
+    );
+    event TokensSwapped(
+        IERC20 sellToken,
+        IERC20 buyToken,
+        uint256 tokenIn,
+        uint256 tokenOut
+    );
     event NewPositionOpened(Position openPosition, Totals inStake);
-    event PositionClosed(uint receivedAmount0, uint receivedAmount1, Totals inStake);
-    event FeesColected(uint receivedAmount0, uint receivedAmount1, Totals feesIncome);
-    event SereviceFeeDistributed(uint serviceFee0, uint serviceFee1, Totals feesIncome);
-    event DoneAccountingFeesAndStake(uint loopCost, Totals inStake, Summarize summParams);
-    event DoneCreatingNewStakes(uint loopCost, Totals inStake, Summarize summParams);
+    event PositionClosed(
+        uint256 receivedAmount0,
+        uint256 receivedAmount1,
+        Totals inStake
+    );
+    event FeesColected(
+        uint256 receivedAmount0,
+        uint256 receivedAmount1,
+        Totals feesIncome
+    );
+    event SereviceFeeDistributed(
+        uint256 serviceFee0,
+        uint256 serviceFee1,
+        Totals feesIncome
+    );
+    event DoneAccountingFeesAndStake(
+        uint256 loopCost,
+        Totals inStake,
+        Summarize summParams
+    );
+    event DoneCreatingNewStakes(
+        uint256 loopCost,
+        Totals inStake,
+        Summarize summParams
+    );
     event SettedSummarizationConfigs(Summarize summParams);
 
     // Properties
@@ -90,10 +128,6 @@ interface IRebalancer {
     function token0() external view returns (IERC20);
 
     function token1() external view returns (IERC20);
-
-    function path01() external view returns (bytes memory);
-
-    function path10() external view returns (bytes memory);
 
     function positionManager()
         external
@@ -160,9 +194,8 @@ interface IRebalancer {
     function rebalancePriceRange(
         int24 tickLowerCount,
         int24 tickUpperCount,
-        bool sellToken0,
-        uint256 tokenIn,
-        uint256 tokenOutMin
+        uint256 token0Share,
+        uint256 token1Share
     ) external;
 
     function deleteUsersWithoutFunds() external;

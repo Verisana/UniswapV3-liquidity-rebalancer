@@ -24,10 +24,6 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
     IERC20 public immutable override token0;
     IERC20 public immutable override token1;
 
-    // They both should be immutable but compiler gives an error
-    bytes public override path01;
-    bytes public override path10;
-
     INonfungiblePositionManager public immutable override positionManager =
         INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
     ISwapRouter public immutable override swapRouter =
@@ -72,21 +68,16 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
 
         // We are not allowed to use immutable storage variables in constructor
         IUniswapV3Pool pool_ = IUniswapV3Pool(poolAddress);
-        IERC20 token0_ = IERC20(pool_.token0());
-        IERC20 token1_ = IERC20(pool_.token1());
-
-        path01 = abi.encodePacked([address(token0_), address(token1_)]);
-        path10 = abi.encodePacked([address(token1_), address(token0_)]);
-
         pool = pool_;
-        token0 = token0_;
-        token1 = token1_;
+
+        token0 = IERC20(pool_.token0());
+        token1 = IERC20(pool_.token1());
     }
 
     modifier restrictIfSummStarted() {
         require(
             summParams.stage == 0,
-            "Method is not allowed if summarization has been started. Wait next blocks"
+            "Restricted while Summirizing in process"
         );
         _;
     }
@@ -105,22 +96,25 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
     {
         require(
             token0Amount > 0 || token1Amount > 0,
-            "Either token0Amount or token1Amount should be greater than 0"
+            "Either of token amounts must be > 0"
         );
         require(
             token0.allowance(msg.sender, address(this)) >= token0Amount,
-            "Not enough allowance of token0Amount to execute allocating"
+            "token0 allowance < token0Amount"
         );
         require(
             token1.allowance(msg.sender, address(this)) >= token1Amount,
-            "Not enough allowance of token1Amount to execute allocating"
+            "token1 allowance < token1Amount"
         );
 
-        token0.safeTransfer(address(this), token0Amount);
-        token1.safeTransfer(address(this), token1Amount);
+        if (token0Amount > 0)
+            token0.safeTransferFrom(msg.sender, address(this), token0Amount);
+        if (token1Amount > 0)
+            token1.safeTransferFrom(msg.sender, address(this), token1Amount);
 
         userStates[msg.sender].deposited.amount0 += token0Amount;
         userStates[msg.sender].deposited.amount1 += token1Amount;
+        userStates[msg.sender].participateInStake = true;
 
         emit UserDeposited(
             msg.sender,
@@ -162,8 +156,10 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
             user.deposited.amount1 = 0;
         }
 
-        token0.safeTransfer(msg.sender, transferAmount.amount0);
-        token1.safeTransfer(msg.sender, transferAmount.amount1);
+        if (transferAmount.amount0 > 0)
+            token0.safeTransfer(msg.sender, transferAmount.amount0);
+        if (transferAmount.amount1 > 0)
+            token1.safeTransfer(msg.sender, transferAmount.amount1);
 
         emit UserWithdrawn(msg.sender, withdrawDeposit, transferAmount, user);
     }
@@ -187,21 +183,24 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         );
     }
 
-    // Methods only for factory Owner
+    // Methods only for factory Owner (backend)
     function rebalancePriceRange(
         int24 tickLowerCount,
         int24 tickUpperCount,
-        bool sellToken0,
-        uint256 tokenIn,
-        uint256 tokenOutMin
+        uint256 token0Share,
+        uint256 token1Share
     ) external override onlyFactoryOwner nonReentrant restrictIfSummStarted {
+        require(
+            inStake.amount0 > 0 || inStake.amount1 > 0,
+            "Stake is empty. No users want to participate in staking"
+        );
+
         if (openPosition.tokenId == 0) {
             _openNewPosition(
                 tickLowerCount,
                 tickUpperCount,
-                sellToken0,
-                tokenIn,
-                tokenOutMin
+                token0Share,
+                token1Share
             );
         } else {
             _collectFees();
@@ -209,17 +208,15 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
             _openNewPosition(
                 tickLowerCount,
                 tickUpperCount,
-                sellToken0,
-                tokenIn,
-                tokenOutMin
+                token0Share,
+                token1Share
             );
         }
         emit PriceRebalanced(
             tickLowerCount,
             tickUpperCount,
-            sellToken0,
-            tokenIn,
-            tokenOutMin,
+            token0Share,
+            token1Share,
             inStake,
             feesIncome
         );
@@ -239,10 +236,7 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         // We don't know beforehand array size, so we calculate it
         uint256 counter = 0;
 
-        require(
-            openPosition.tokenId != 0,
-            "This method must be used only if a position has been opened"
-        );
+        require(openPosition.tokenId != 0, "Position must be opened");
 
         Totals memory realBalance = Totals({
             amount0: token0.balanceOf(address(this)),
@@ -273,7 +267,7 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         require(
             calcBalance.amount0 == realBalance.amount0 &&
                 calcBalance.amount1 == realBalance.amount1,
-            "The contract is misbehaving. You haven't accounted some funds movements"
+            "You haven't accounted some funds movements"
         );
 
         _sendDiffToService(calcBalance, realBalance);
@@ -304,7 +298,7 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         require(
             block.number - summParams.lastBlock >=
                 factory.summarizationFrequency(),
-            "Wait more blocks to start summarization proccess"
+            "Wait more to start summarization"
         );
         summParams.stage++;
         _collectFees();
@@ -320,7 +314,7 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
     function summarizeUsersStates() external override nonReentrant {
         require(
             summParams.stage == 1 || summParams.stage == 2,
-            "First start summarization proccess"
+            "First start summarization"
         );
         emit StatesSummarizing(msg.sender, summParams, block.number);
         if (summParams.stage == 1) {
@@ -340,7 +334,10 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
             if (success) {
                 summParams.stage = 0;
                 summParams.lastUser = 0;
-                summParams.lastBlock = block.number;
+                summParams.lastBlock = inStake.amount0 > 0 ||
+                    inStake.amount0 > 0
+                    ? block.number
+                    : 0;
             }
         }
     }
@@ -387,73 +384,101 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         require(
             realBalance.amount0 >= calcBalance.amount0 &&
                 realBalance.amount1 >= calcBalance.amount1,
-            "There are bugs in Rebalancer. You should never owe more tokens, than you have"
+            "You must never owe more tokens, than you have"
         );
 
         emit BalanceDiffSentToService(realBalance, calcBalance);
 
-        token0.safeTransfer(
-            factory.owner(),
-            realBalance.amount0 - calcBalance.amount0
-        );
-        token1.safeTransfer(
-            factory.owner(),
-            realBalance.amount1 - calcBalance.amount1
-        );
+        if (realBalance.amount0 - calcBalance.amount0 > 0)
+            token0.safeTransfer(
+                factory.owner(),
+                realBalance.amount0 - calcBalance.amount0
+            );
+        if (realBalance.amount1 - calcBalance.amount1 > 0)
+            token1.safeTransfer(
+                factory.owner(),
+                realBalance.amount1 - calcBalance.amount1
+            );
+    }
+
+    // This approach is really awfull. Not gas efficient at all.
+    // But it works and should be optimized when deploy to production
+    function _changeTokensRatio(uint256 token0Share, uint256 token1Share)
+        private
+    {
+        require(token0Share + token1Share == 100, "tokenShare sum != 100");
+
+        // First, we make sure, that all funds located in one sided token
+        // It should be guaranteed by the fact, that we rebalance only when
+        // the price fall of our range. But in other cases, we still need
+        // to do this
+        uint256 toSell;
+        if (inStake.amount0 > inStake.amount1) {
+            inStake.amount0 += _swapTokens(token1, token0, inStake.amount1);
+            inStake.amount1 = 0;
+
+            toSell = calcShare(inStake.amount0, token1Share, 100);
+            inStake.amount1 += _swapTokens(token0, token1, toSell);
+            inStake.amount0 -= toSell;
+        } else {
+            inStake.amount1 += _swapTokens(token0, token1, inStake.amount0);
+            inStake.amount0 = 0;
+
+            toSell = calcShare(inStake.amount1, token0Share, 100);
+            inStake.amount0 += _swapTokens(token1, token0, toSell);
+            inStake.amount1 -= toSell;
+        }
+        emit TokensRationChanged(token0Share, token1Share, toSell, inStake);
     }
 
     function _swapTokens(
-        bool sellToken0,
-        uint256 tokenIn,
-        uint256 tokenOutMin
-    ) private {
-        if (sellToken0) {
-            inStake.amount0 -= tokenIn;
-            token0.safeApprove(address(swapRouter), tokenIn);
-            inStake.amount1 += swapRouter.exactInput(
-                ISwapRouter.ExactInputParams({
-                    path: path01,
-                    recipient: address(this),
-                    deadline: getDeadline(),
-                    amountIn: tokenIn,
-                    amountOutMinimum: tokenOutMin
-                })
-            );
-        } else {
-            inStake.amount1 -= tokenIn;
-            token1.safeApprove(address(swapRouter), tokenIn);
-            inStake.amount0 += swapRouter.exactInput(
-                ISwapRouter.ExactInputParams({
-                    path: path10,
-                    recipient: address(this),
-                    deadline: getDeadline(),
-                    amountIn: tokenIn,
-                    amountOutMinimum: tokenOutMin
-                })
-            );
-        }
-        emit TokensSwapped(sellToken0, tokenIn, tokenOutMin, inStake);
+        IERC20 sellToken,
+        IERC20 buyToken,
+        uint256 tokenInAmount
+    ) private returns (uint256 tokenOutAmount) {
+        if (tokenInAmount == 0) return 0;
+
+        sellToken.safeApprove(address(swapRouter), tokenInAmount);
+
+        tokenOutAmount = swapRouter.exactInputSingle(
+            ISwapRouter.ExactInputSingleParams({
+                tokenIn: address(sellToken),
+                tokenOut: address(buyToken),
+                fee: pool.fee(),
+                recipient: address(this),
+                deadline: getDeadline(),
+                amountIn: tokenInAmount,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            })
+        );
+
+        emit TokensSwapped(sellToken, buyToken, tokenInAmount, tokenOutAmount);
     }
 
     function _openNewPosition(
         int24 tickLowerCount,
         int24 tickUpperCount,
-        bool sellToken0,
-        uint256 tokenIn,
-        uint256 tokenOutMin
+        uint256 token0Share,
+        uint256 token1Share
     ) private {
         (, int24 tick, , , , , ) = pool.slot0();
-        int24 fulTick = tick + (tick % pool.tickSpacing());
+        int24 fullTick = tick - (tick % pool.tickSpacing());
 
         // Here we get lower and upper bounds for current price
-        int24 tickLower = fulTick - pool.tickSpacing();
-        int24 tickUpper = fulTick + pool.tickSpacing();
+        int24 tickLower = fullTick - pool.tickSpacing();
+        int24 tickUpper = fullTick + pool.tickSpacing();
 
         tickLower -= tickLowerCount * pool.tickSpacing();
         tickUpper += tickUpperCount * pool.tickSpacing();
 
-        _swapTokens(sellToken0, tokenIn, tokenOutMin);
+        console.logInt(pool.tickSpacing());
+        console.logInt(tickLower);
+        console.logInt(tickUpper);
 
+        _changeTokensRatio(token0Share, token1Share);
+
+        console.log("Before minting");
         (
             uint256 tokenId,
             uint128 liquidity,
@@ -474,6 +499,7 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
                 deadline: getDeadline()
             })
         );
+        console.log("After minting");
 
         inStake.amount0 -= amount0;
         inStake.amount1 -= amount1;
@@ -615,14 +641,15 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         inStake.amount1 -= summParams.distributedDeposits.amount1;
 
         // Expect very small amounts, occuring because of rounding errors
-        token0.safeTransfer(
-            factory.owner(),
-            feesIncome.amount0 + inStake.amount0
-        );
-        token1.safeTransfer(
-            factory.owner(),
+        Totals memory remains = Totals(
+            feesIncome.amount0 + inStake.amount0,
             feesIncome.amount1 + inStake.amount1
         );
+
+        if (remains.amount0 > 0)
+            token0.safeTransfer(factory.owner(), remains.amount0);
+        if (remains.amount1 > 0)
+            token1.safeTransfer(factory.owner(), remains.amount1);
 
         feesIncome.amount0 = 0;
         feesIncome.amount1 = 0;
@@ -687,10 +714,9 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         // We swap all tokens into one asset and do it to the side of
         // smaller amount in order to counter-balance price movement
         if (inStake.amount0 > inStake.amount1) {
-
             summParams.sellToken0 = true;
             if (inStake.amount0 > 0) {
-                    _swapTokens(summParams.sellToken0, inStake.amount0, 0);
+                _changeTokensRatio(0, 100);
             }
 
             if (initAmount0 > 0) {
@@ -702,7 +728,7 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         } else {
             summParams.sellToken0 = false;
             if (inStake.amount1 > 0) {
-                _swapTokens(summParams.sellToken0, inStake.amount1, 0);
+                _changeTokensRatio(100, 0);
             }
 
             if (initAmount1 > 0) {
