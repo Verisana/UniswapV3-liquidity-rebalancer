@@ -1,10 +1,11 @@
-import { ethers, providers } from "ethers";
+import { ethers } from "ethers";
 import hre from "hardhat";
 import * as dotenv from "dotenv";
 import { IRebalancer } from "../../dist/contracts/typechain/IRebalancer";
 import { IRebalancerFactory } from "../../dist/contracts/typechain/IRebalancerFactory";
 import { IUniswapV3Pool } from "../../dist/contracts/typechain/IUniswapV3Pool";
-import { Position } from "@uniswap/v3-sdk"
+import { IERC20 } from "../../dist/contracts/typechain/IERC20";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 dotenv.config();
 
