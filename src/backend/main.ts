@@ -178,10 +178,34 @@ const summarizeUsersStatesTillTheEnd = async (
         if (!result) return false;
 
         summParams = await rebalancer.summParams();
-        console.log(summParams.stage.toString());
     } while (!summParams.stage.eq(0));
 
     return true;
+};
+
+const depositFundsToRebalancer = async (
+    rebalancer: IRebalancer,
+    users: SignerWithAddress[],
+    amounts: ethers.BigNumber[]
+) => {
+    if (users.length != amounts.length)
+        throw "Users and deposits must have the same length";
+
+    for (let i = 0; i < users.length; i++) {
+        await users[i].sendTransaction({ to: tokens.WETH, value: amounts[0] });
+        const weth = (await hre.ethers.getContractAt(
+            "IERC20",
+            tokens.WETH
+        )) as IERC20;
+        await weth.connect(users[i]).approve(rebalancer.address, amounts[i]);
+        await rebalancer
+            .connect(users[i])
+            .deposit(ethers.BigNumber.from(0), amounts[i]);
+        const state = await rebalancer.userStates(users[i].address);
+        console.log(
+            `User ${i} deposited WETH: ${state.deposited.amount1.toString()}`
+        );
+    }
 };
 
 const main = async () => {
