@@ -132,62 +132,22 @@ const priceInPositionRange = async (
     );
 };
 
-interface RebalancePriceRangeParams {
-    tickLowerCount: ethers.BigNumber;
-    tickUpperCount: ethers.BigNumber;
-    sellToken0: boolean;
-    tokenIn: ethers.BigNumber;
-    tokenOutMin: ethers.BigNumber;
-}
-
-interface RebalancerConfig {
-    slippage: number;
-}
-
-const calcTickRanges = (
-    rebalancer: IRebalancer
-): [ethers.BigNumber, ethers.BigNumber] => {
-    // const inStake =
-    // return [tickLowerCount, tickUpperCount]
-};
-
-// Tokens amount should be rearranged ~50/50 on each tick side
-const calcParamsForTokenEquilibrium = async (
-    rebalancer: IRebalancer,
-    pool: IUniswapV3Pool,
-    position: Position
-): [boolean, ethers.BigNumber, ethers.BigNumber] => {
-    const openPosition = await rebalancer.openPosition();
-    const slot0 = await pool.slot0();
-
-    const toSplit = slot0.tick > openPosition.tickUpper ? 1 : 0;
-
+const calcTickRanges = (): [ethers.BigNumber, ethers.BigNumber] => {
+    return [ethers.BigNumber.from(1), ethers.BigNumber.from(1)];
 };
 
 const calcRebalanceParams = (
     rebalancer: IRebalancer,
-    pool: IUniswapV3Pool,
-    config: RebalancerConfig
-): RebalancePriceRangeParams => {
-    const;
+    pool: IUniswapV3Pool
+): [ethers.BigNumber, ethers.BigNumber, ethers.BigNumber, ethers.BigNumber] => {
+    const [tickLowerCount, tickUpperCount] = calcTickRanges();
 
-    const [tickLowerCount, tickUpperCount] = calcTickRanges(rebalancer);
-    const [sellToken0, tokenIn, tokenOutMin] =
-        calcEquilibriumParams(rebalancer);
-
-    const params: RebalancePriceRangeParams = {
-        tickLowerCount: tickLowerCount,
-        tickUpperCount: tickUpperCount,
-        sellToken0: sellToken0,
-        tokenIn: tokenIn,
-        tokenOutMin: tokenOutMin
-    };
-
-    return params;
-};
-
-const executeRebalancing = (rebalancer: IRebalancer): boolean => {
-    return true;
+    return [
+        tickLowerCount,
+        tickUpperCount,
+        ethers.BigNumber.from(50),
+        ethers.BigNumber.from(50)
+    ];
 };
 
 const sendTransaction = async (
