@@ -45,7 +45,11 @@ const getContracts = async (
             tokens.USDC,
             3000
         );
+        await hardhatRebalancerFactory.setBlockFrequencySummarization(
+            ethers.BigNumber.from(241)
+        );
         tx = await tx.wait();
+
         rebalancerAddress = tx.events[0].args.rebalancer;
     } else {
         if (process.env.REBALANCER_ADDRESS === undefined)
