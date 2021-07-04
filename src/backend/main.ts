@@ -65,7 +65,7 @@ const getContracts = async (
         await rebalancer.factory()
     );
     const pool = await hre.ethers.getContractAt(
-        "UniswapV3Pool",
+        "IUniswapV3Pool",
         await rebalancer.pool()
     );
     return [rebalancer, hardhatRebalancerFactory, pool];
@@ -91,7 +91,21 @@ const needToStartSummarization = async (
     const frequency = await factory.summarizationFrequency();
 
     // (lastBlock - summParams.lastBlock) >= frequency
-    return lastBlock.sub(summParams.lastBlock).gte(frequency);
+    console.log(
+        `LastBlock: ${lastBlock}. SavedBlockTime: ${summParams.lastBlock}. ` +
+            `Freq: ${frequency}`
+    );
+
+    if (process.env.NODE_ENV == "development") {
+        // For testing purposes, when we use fork chain, block numbers are messed
+        // So, we check inappropriate way
+        return (
+            lastBlock.gt(summParams.lastBlock) &&
+            lastBlock.sub(summParams.lastBlock).gte(frequency)
+        );
+    } else {
+        return lastBlock.sub(summParams.lastBlock).gte(frequency);
+    }
 };
 
 const summarizationInProcess = async (
