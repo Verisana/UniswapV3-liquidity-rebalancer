@@ -4,6 +4,7 @@ import * as dotenv from "dotenv";
 import { IRebalancer } from "../../dist/contracts/typechain/IRebalancer";
 import { IRebalancerFactory } from "../../dist/contracts/typechain/IRebalancerFactory";
 import { IUniswapV3Pool } from "../../dist/contracts/typechain/IUniswapV3Pool";
+import { ISwapRouter } from "../../dist/contracts/typechain/ISwapRouter";
 import { IERC20 } from "../../dist/contracts/typechain/IERC20";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
@@ -30,7 +31,9 @@ const getProvider = (): ethers.providers.Provider => {
 
 const getContracts = async (
     signer: ethers.Signer
-): Promise<[ethers.Contract, ethers.Contract, ethers.Contract]> => {
+): Promise<
+    [ethers.Contract, ethers.Contract, ethers.Contract, ethers.Contract]
+> => {
     let rebalancerAddress: string;
     let hardhatRebalancerFactory;
 
@@ -46,7 +49,7 @@ const getContracts = async (
             3000
         );
         await hardhatRebalancerFactory.setBlockFrequencySummarization(
-            ethers.BigNumber.from(241)
+            ethers.BigNumber.from(50)
         );
         tx = await tx.wait();
 
@@ -68,7 +71,12 @@ const getContracts = async (
         "IUniswapV3Pool",
         await rebalancer.pool()
     );
-    return [rebalancer, hardhatRebalancerFactory, pool];
+
+    const router = await hre.ethers.getContractAt(
+        "ISwapRouter",
+        await rebalancer.swapRouter()
+    );
+    return [rebalancer, hardhatRebalancerFactory, pool, router];
 };
 
 async function* getLatestBlock(provider: ethers.providers.Provider) {
