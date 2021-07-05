@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/finance/PaymentSplitter.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
@@ -24,6 +25,8 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
     IERC20 public immutable override token0;
     IERC20 public immutable override token1;
 
+    IERC721 public immutable override posNFT =
+        IERC721(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
     INonfungiblePositionManager public immutable override positionManager =
         INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
     ISwapRouter public immutable override swapRouter =
@@ -499,7 +502,6 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
                 deadline: getDeadline()
             })
         );
-        console.log("After minting");
 
         inStake.amount0 -= amount0;
         inStake.amount1 -= amount1;
@@ -517,35 +519,49 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
 
     function _removeLiquidityPosition() private {
         if (openPosition.tokenId != 0) {
-            (uint256 amount0, uint256 amount1) = positionManager
+            posNFT.approve(address(positionManager), openPosition.tokenId);
+
+            (uint256 amount0L, uint256 amount1L) = positionManager
             .decreaseLiquidity(
                 INonfungiblePositionManager.DecreaseLiquidityParams({
                     tokenId: openPosition.tokenId,
-                    liquidity: 0,
+                    liquidity: openPosition.liquidity,
                     amount0Min: 0,
                     amount1Min: 0,
                     deadline: getDeadline()
                 })
             );
 
-            inStake.amount0 += amount0;
-            inStake.amount1 += amount1;
+            uint128 MAX_INT = 2**128 - 1;
+            (uint256 amount0C, uint256 amount1C) = positionManager.collect(
+                INonfungiblePositionManager.CollectParams({
+                    tokenId: openPosition.tokenId,
+                    recipient: address(this),
+                    amount0Max: MAX_INT,
+                    amount1Max: MAX_INT
+                })
+            );
 
+            inStake.amount0 += (amount0C - amount0L) + amount0C;
+            inStake.amount1 += (amount1C - amount1L) + amount1C;
+
+            posNFT.approve(address(positionManager), openPosition.tokenId);
             positionManager.burn(openPosition.tokenId);
 
             openPosition = Position(0, 0, 0, 0, 0, 0);
-            emit PositionClosed(amount0, amount1, inStake);
+            emit PositionClosed(amount0L, amount1L, inStake);
         }
     }
 
     function _collectFees() private {
         if (openPosition.tokenId != 0) {
+            uint128 MAX_INT = 2**128 - 1;
             (uint256 feeAmount0, uint256 feeAmount1) = positionManager.collect(
                 INonfungiblePositionManager.CollectParams({
                     tokenId: openPosition.tokenId,
                     recipient: address(this),
-                    amount0Max: 0,
-                    amount1Max: 0
+                    amount0Max: MAX_INT,
+                    amount1Max: MAX_INT
                 })
             );
 

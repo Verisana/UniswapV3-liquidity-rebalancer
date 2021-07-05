@@ -135,6 +135,8 @@ interface IRebalancer {
 
     function token1() external view returns (IERC20);
 
+    function posNFT() external view returns (IERC721);
+
     function positionManager()
         external
         view
