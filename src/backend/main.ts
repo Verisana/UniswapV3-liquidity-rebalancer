@@ -131,6 +131,8 @@ const priceInPositionRange = async (
 ): Promise<boolean> => {
     const openPosition = await rebalancer.openPosition();
     const slot0 = await pool.slot0();
+
+    console.log("\nCheck existing positions bounds:")
     console.log(
         `Lower: ${openPosition.tickLower}. ` +
             `Tick: ${slot0.tick}. ` +
