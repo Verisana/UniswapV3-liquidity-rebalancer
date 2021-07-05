@@ -16,7 +16,7 @@ export default {
             },
             mining: {
                 auto: true,
-                interval: 5000
+                interval: 1000
             },
             accounts: {
                 accountsBalance: "10000000000000000000000000" // 10 000 000 ETH
@@ -30,7 +30,7 @@ export default {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 100
+                        runs: 1
                     }
                 }
             }
