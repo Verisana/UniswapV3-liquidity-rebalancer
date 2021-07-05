@@ -56,7 +56,7 @@ contract RebalancerFactory is
             "Unreasonably big summarizationFrequency. Set it less than 11601"
         );
         require(
-            _summarizationFrequency > 240,
+            _summarizationFrequency > 10,
             "Unreasonably small summarizationFrequency. Set it greater than 240"
         );
         summarizationFrequency = _summarizationFrequency;
