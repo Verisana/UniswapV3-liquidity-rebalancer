@@ -272,6 +272,32 @@ const printUsersStates = async (
         );
     }
 };
+
+const withdrawUsersFunds = async (
+    rebalancer: IRebalancer,
+    users: SignerWithAddress[]
+) => {
+    for (let i = 0; i < users.length; i++) {
+        const weth = (await hre.ethers.getContractAt(
+            "IERC20",
+            tokens.WETH
+        )) as IERC20;
+        const usdc = (await hre.ethers.getContractAt(
+            "IERC20",
+            tokens.USDC
+        )) as IERC20;
+
+        await rebalancer.connect(users[i]).withdraw(true);
+
+        const wethBalance = await weth.balanceOf(users[i].address);
+        const usdcBalance = await usdc.balanceOf(users[i].address);
+
+        console.log(
+            `User ${i} balance after all trades. WETH: ${wethBalance.toString()}. USDC: ${usdcBalance.toString()}`
+        );
+    }
+};
+
 const main = async () => {
     const provider = getProvider();
 
