@@ -230,6 +230,34 @@ const removeAllUsersFromStaking = async (
     }
 };
 
+const emulateTradeActivity = async (
+    router: ISwapRouter,
+    pool: IUniswapV3Pool,
+    trader: SignerWithAddress,
+    amount: ethers.BigNumber
+) => {
+    await trader.sendTransaction({ to: tokens.WETH, value: amount });
+    const weth = (await hre.ethers.getContractAt(
+        "IERC20",
+        tokens.WETH
+    )) as IERC20;
+    await weth.connect(trader).approve(router.address, amount);
+    const fee = await pool.fee();
+    const deadline = Date.now() + 1000000;
+    await router.connect(trader).exactInputSingle({
+        tokenIn: tokens.WETH,
+        tokenOut: tokens.USDC,
+        fee: fee,
+        recipient: trader.address,
+        deadline: deadline,
+        amountIn: amount,
+        amountOutMinimum: 0,
+        sqrtPriceLimitX96: 0
+    });
+
+    console.log(`\nTrader exchanged ${amount} ETH`);
+};
+
 const main = async () => {
     const provider = getProvider();
 
