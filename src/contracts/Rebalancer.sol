@@ -15,8 +15,6 @@ import "./interfaces/IRebalancerDeployer.sol";
 import "./interfaces/IRebalancerFactory.sol";
 import "./interfaces/IRebalancer.sol";
 
-import "hardhat/console.sol";
-
 contract Rebalancer is IRebalancer, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -441,7 +439,7 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
     ) private returns (uint256 tokenOutAmount) {
         if (tokenInAmount == 0) return 0;
 
-        sellToken.safeApprove(address(swapRouter), tokenInAmount);
+        sellToken.safeIncreaseAllowance(address(swapRouter), tokenInAmount);
 
         tokenOutAmount = swapRouter.exactInputSingle(
             ISwapRouter.ExactInputSingleParams({
@@ -475,13 +473,12 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
         tickLower -= tickLowerCount * pool.tickSpacing();
         tickUpper += tickUpperCount * pool.tickSpacing();
 
-        console.logInt(pool.tickSpacing());
-        console.logInt(tickLower);
-        console.logInt(tickUpper);
-
         _changeTokensRatio(token0Share, token1Share);
 
-        console.log("Before minting");
+
+        token0.safeIncreaseAllowance(address(positionManager), inStake.amount0);
+        token1.safeIncreaseAllowance(address(positionManager), inStake.amount1);
+
         (
             uint256 tokenId,
             uint128 liquidity,
