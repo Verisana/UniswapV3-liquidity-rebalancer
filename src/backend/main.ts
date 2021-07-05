@@ -303,30 +303,31 @@ const main = async () => {
 
     // Here we have: owner, userA, userB, userC and others are all considered traders
     const accounts = await hre.ethers.getSigners();
-    const [rebalancer, factory, pool] = (await getContracts(accounts[0])) as [
-        IRebalancer,
-        IRebalancerFactory,
-        IUniswapV3Pool
-    ];
-    console.log("All contracts has been initialized");
+    const [rebalancer, factory, pool, router] = (await getContracts(
+        accounts[0]
+    )) as [IRebalancer, IRebalancerFactory, IUniswapV3Pool, ISwapRouter];
+    console.log(
+        "All contracts has been initialized and USDC / WETH is created\n"
+    );
     const depositAmounts = [
         ethers.BigNumber.from("200000000000000000000"), // 200 ETH
         ethers.BigNumber.from("74000000000000000000"), // 74 ETH
         ethers.BigNumber.from("1000000000000000000") // 1 ETH
     ];
+    console.log("Deposit Users funds before Rebalancing...")
     depositFundsToRebalancer(rebalancer, accounts.slice(1, 4), depositAmounts);
-
     for await (const newBlockNumber of getLatestBlock(provider)) {
-        console.log(`Received new block ${newBlockNumber}`);
+        console.log(`\nReceived new block ${newBlockNumber}`);
         if (
             (await needToStartSummarization(
                 rebalancer,
                 factory,
+                provider,
                 newBlockNumber
             )) ||
             (await summarizationInProcess(rebalancer))
         ) {
-            console.log("Summarization time has come!");
+            console.log("\nSummarization time has come!");
             let summParams = await rebalancer.summParams();
             if (summParams.stage.eq(0)) {
                 let result = await sendTransaction(
@@ -339,49 +340,44 @@ const main = async () => {
             }
             await summarizeUsersStatesTillTheEnd(rebalancer);
             const inStake = await rebalancer.inStake();
-            const userA = await rebalancer.userStates(accounts[1].address);
-            const userB = await rebalancer.userStates(accounts[2].address);
-            const userC = await rebalancer.userStates(accounts[3].address);
-            summParams = await rebalancer.summParams();
-
             console.log(
                 `Total stake. Amount0: ${inStake.amount0.toString()}. Amount1: ${inStake.amount1.toString()}`
             );
-            console.log(
-                `UserA share: ${userA.share.toString()}. Denominator ${summParams.shareDenominator.toString()}`
-            );
-            console.log(
-                `UserB share: ${userB.share.toString()}. Denominator ${summParams.shareDenominator.toString()}`
-            );
-            console.log(
-                `UserC share: ${userC.share.toString()}. Denominator ${summParams.shareDenominator.toString()}`
-            );
+            console.log("");
+            await printUsersStates(rebalancer, accounts.slice(1, 4));
+            console.log("");
+            await removeAllUsersFromStaking(rebalancer, accounts.slice(1, 4));
         }
 
         if (await priceInPositionRange(rebalancer, pool)) {
-            console.log("Price in position range");
-            continue;
+            console.log("\nPrice IN position range");
         } else {
+            console.log("\nPrice OUT of position range");
+
             const [tickLowerCount, tickUpperCount, token0Share, token1Share] =
                 calcRebalanceParams(rebalancer, pool);
+            try {
+                await rebalancer.rebalancePriceRange(
+                    tickLowerCount,
+                    tickUpperCount,
+                    token0Share,
+                    token1Share
+                );
+            } catch (e) {
+                if (
+                    e.message.endsWith(
+                        "'Stake is empty. No users want to participate in staking'"
+                    )
+                ) {
+                    console.log("\nStake is empty. Exit emulating");
+                    break;
+                }
+                throw e;
+            }
 
-            await rebalancer.rebalancePriceRange(
-                tickLowerCount,
-                tickUpperCount,
-                token0Share,
-                token1Share
-            );
-            // await sendTransaction(
-            //     rebalancer.rebalancePriceRange.bind(
-            //         tickLowerCount,
-            //         tickUpperCount,
-            //         token0Share,
-            //         token1Share
-            //     ),
-            //     "rebalancePriceRange"
-            // );
             const position = await rebalancer.openPosition();
             const inStake = await rebalancer.inStake();
+            const feesIncome = await rebalancer.feesIncome();
 
             console.log(
                 `New position opened: from ${position.tickLower.toString()} ` +
@@ -391,8 +387,19 @@ const main = async () => {
                 `Remained inStake is ${inStake.amount0.toString()} ` +
                     `and ${inStake.amount1.toString()}`
             );
+            console.log(
+                `Earned fees ${feesIncome.amount0.toString()} and ${feesIncome.amount1.toString()}`
+            );
         }
+        // 2000 ETH
+        const amountToTrade = ethers.BigNumber.from("2000000000000000000000");
+        await emulateTradeActivity(router, pool, accounts[4], amountToTrade);
     }
+    console.log("");
+    console.log("All users results are:")
+    await withdrawUsersFunds(rebalancer, accounts.slice(1, 4));
+    console.log("");
+    await printUsersStates(rebalancer, accounts.slice(1, 4));
 };
 
 main().then(() => {});
