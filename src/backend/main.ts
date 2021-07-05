@@ -258,6 +258,20 @@ const emulateTradeActivity = async (
     console.log(`\nTrader exchanged ${amount} ETH`);
 };
 
+const printUsersStates = async (
+    rebalancer: IRebalancer,
+    users: SignerWithAddress[]
+) => {
+    const summParams = await rebalancer.summParams();
+    for (let i = 0; i < users.length; i++) {
+        const userState = await rebalancer.userStates(users[i].address);
+        console.log(
+            `User ${i} share: ${userState.share.toString()}. Denominator ${summParams.shareDenominator.toString()} ` +
+                `Deposit0: ${userState.deposited.amount0.toString()}. Deposit1: ${userState.deposited.amount1.toString()} ` +
+                `Fee0: ${userState.fee.amount0.toString()}. Fee1: ${userState.fee.amount1.toString()}`
+        );
+    }
+};
 const main = async () => {
     const provider = getProvider();
 
