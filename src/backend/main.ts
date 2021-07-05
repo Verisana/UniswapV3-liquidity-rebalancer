@@ -145,7 +145,7 @@ const priceInPositionRange = async (
 };
 
 const calcTickRanges = (): [ethers.BigNumber, ethers.BigNumber] => {
-    return [ethers.BigNumber.from(1), ethers.BigNumber.from(1)];
+    return [ethers.BigNumber.from(3), ethers.BigNumber.from(3)];
 };
 
 const calcRebalanceParams = (
