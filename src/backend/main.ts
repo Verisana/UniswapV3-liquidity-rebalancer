@@ -204,7 +204,7 @@ const depositFundsToRebalancer = async (
         throw "Users and deposits must have the same length";
 
     for (let i = 0; i < users.length; i++) {
-        await users[i].sendTransaction({ to: tokens.WETH, value: amounts[0] });
+        await users[i].sendTransaction({ to: tokens.WETH, value: amounts[i] });
         const weth = (await hre.ethers.getContractAt(
             "IERC20",
             tokens.WETH
