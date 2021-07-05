@@ -2,6 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
@@ -22,6 +23,11 @@ interface IRebalancer {
         uint256 amount1;
     }
 
+    struct Fraction {
+        uint256 numerator;
+        uint256 denominator;
+    }
+
     struct UserState {
         Totals fee;
         Totals deposited;
@@ -33,7 +39,7 @@ interface IRebalancer {
         uint256 lastBlock;
         uint256 lastUser;
         int64 stage;
-        uint256 fixedPrice;
+        Fraction fixedPrice;
         Totals toStake;
         uint256 shareDenominator;
         bool sellToken0;
@@ -162,7 +168,7 @@ interface IRebalancer {
             uint256 lastBlock,
             uint256 lastUser,
             int64 stage,
-            uint256 fixedPrice,
+            Fraction memory fixedPrice,
             Totals memory toStake,
             uint256 shareDenominator,
             bool sellToken0,

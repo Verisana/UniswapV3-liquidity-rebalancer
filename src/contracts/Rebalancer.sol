@@ -47,7 +47,7 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
             lastBlock: 0,
             lastUser: 0,
             stage: 0,
-            fixedPrice: 0,
+            fixedPrice: Fraction(0, 0),
             toStake: Totals(0, 0),
             shareDenominator: 0,
             sellToken0: false,
@@ -681,18 +681,27 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
                 return false;
             }
 
-            UserState memory user = userStates[_users[i]];
+            UserState storage user = userStates[_users[i]];
+            if (user.participateInStake) {
+                uint256 converted = summParams.sellToken0
+                    ? calcShare(
+                        user.deposited.amount0,
+                        summParams.fixedPrice.numerator,
+                        summParams.fixedPrice.denominator
+                    )
+                    : calcShare(
+                        user.deposited.amount1,
+                        summParams.fixedPrice.numerator,
+                        summParams.fixedPrice.denominator
+                    );
 
-            uint256 converted = summParams.sellToken0
-                ? user.deposited.amount0 * summParams.fixedPrice
-                : user.deposited.amount1 * summParams.fixedPrice;
+                user.share = summParams.sellToken0
+                    ? user.deposited.amount1 + converted
+                    : user.deposited.amount0 + converted;
 
-            user.share = summParams.sellToken0
-                ? user.deposited.amount1 + converted
-                : user.deposited.amount0 + converted;
-
-            user.deposited.amount0 = 0;
-            user.deposited.amount1 = 0;
+                user.deposited.amount0 = 0;
+                user.deposited.amount1 = 0;
+            }
 
             if (loopCost == 0) {
                 loopCost = initGas - gasleft();
@@ -720,9 +729,10 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
             }
 
             if (initAmount0 > 0) {
-                summParams.fixedPrice =
-                    (inStake.amount1 - initAmount1) /
-                    initAmount0;
+                summParams.fixedPrice = Fraction(
+                    inStake.amount1 - initAmount1,
+                    initAmount0
+                );
                 summParams.shareDenominator = inStake.amount1;
             }
         } else {
@@ -732,9 +742,10 @@ contract Rebalancer is IRebalancer, ReentrancyGuard {
             }
 
             if (initAmount1 > 0) {
-                summParams.fixedPrice =
-                    (inStake.amount0 - initAmount0) /
-                    initAmount1;
+                summParams.fixedPrice = Fraction(
+                    inStake.amount0 - initAmount0,
+                    initAmount1
+                );
                 summParams.shareDenominator = inStake.amount0;
             }
         }
