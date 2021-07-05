@@ -93,24 +93,26 @@ async function* getLatestBlock(provider: ethers.providers.Provider) {
 const needToStartSummarization = async (
     rebalancer: IRebalancer,
     factory: IRebalancerFactory,
+    provider: ethers.providers.Provider,
     lastBlock: ethers.BigNumber
 ): Promise<boolean> => {
     const summParams = await rebalancer.summParams();
     const frequency = await factory.summarizationFrequency();
 
     // (lastBlock - summParams.lastBlock) >= frequency
-    console.log(
-        `LastBlock: ${lastBlock}. SavedBlockTime: ${summParams.lastBlock}. ` +
-            `Freq: ${frequency}`
-    );
-
+    // console.log(
+    //     `LastBlock: ${lastBlock}. SavedBlockTime: ${summParams.lastBlock}. ` +
+    //         `Freq: ${frequency}`
+    // );
     if (process.env.NODE_ENV == "development") {
         // For testing purposes, when we use fork chain, block numbers are messed
         // So, we check inappropriate way
-        return (
-            lastBlock.gt(summParams.lastBlock) &&
-            lastBlock.sub(summParams.lastBlock).gte(frequency)
-        );
+        try {
+            await rebalancer.callStatic.startSummarizeTrades();
+            return true;
+        } catch {
+            return false;
+        }
     } else {
         return lastBlock.sub(summParams.lastBlock).gte(frequency);
     }
