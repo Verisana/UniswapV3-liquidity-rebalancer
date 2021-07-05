@@ -220,6 +220,16 @@ const depositFundsToRebalancer = async (
     }
 };
 
+const removeAllUsersFromStaking = async (
+    rebalancer: IRebalancer,
+    users: SignerWithAddress[]
+) => {
+    for (let i = 0; i < users.length; i++) {
+        await rebalancer.connect(users[i]).participate();
+        console.log(`User ${i} requested funds withdrawing`);
+    }
+};
+
 const main = async () => {
     const provider = getProvider();
 
